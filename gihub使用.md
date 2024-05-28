@@ -79,3 +79,5 @@ $ git config --global user.email “email@example.com”
 推送到其他分支：git push origin dev
 创建远程origin 的 dev 分支到本地:git checkout -b dev origin/dev
 
+强制推送并覆盖远程分支的更张（请注意这可能会导致其他开发者的工作丢失）：git push origin master --force-with-lease
+
