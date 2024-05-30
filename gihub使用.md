@@ -81,4 +81,4 @@ $ git config --global user.email “email@example.com”
 
 强制推送并覆盖远程分支的更张（请注意这可能会导致其他开发者的工作丢失）：git push origin master --force-with-lease
 
-111111
+强推：git push -f origin master

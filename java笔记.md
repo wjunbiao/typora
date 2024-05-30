@@ -11,6 +11,8 @@
 
 
 
+## 泛型？
+
 ## 接口
 
 ### 接口的注意事项和细节
@@ -862,6 +864,11 @@ ASCII码，是上世纪60年代，美国制定的字符编码，使用一个字�
 在Unicode的实现方式上进行改进。（使用1-6个字节表示一个符号）
 字母占1个字节，汉字占3个字节
 
+### 4、国标码
+
+![image-20240529180122005](./assets/image-20240529180122005.png)
+ANSI：国标码就是一个统称，每个国家有自己的国标码，这里一般就是gbk码。一个汉字占两个字节
+
 ## 数据类型
 
 ![image-20240527195602394](./assets/image-20240527195602394.png)
@@ -1257,7 +1264,7 @@ public class Ceshi {
         FileWriter fileWriter = null;
 
         try {
-            fileWriter= new FileWriter(filePath);
+            fileWriter= new FileWriter(filePath,true);//也可以加true
             //写入一个字符
 //            fileWriter.write('王');
             //写入指定数组
@@ -1306,3 +1313,1374 @@ public class Ceshi {
 证明确实是包装
 
 包装完以后就不在局限于，文件只能用文件的节点流，数组只能用数组的节点流
+
+![image-20240528232606126](./assets/image-20240528232606126.png)
+例如：这个BufferedWriter 其实就不在局限于某一种数据源上[修饰器设计模式]
+
+![image-20240528234422680](./assets/image-20240528234422680.png)
+
+### 第3组、BufferedReader , BufferedWriter (字符输入输出流的包装流"缓冲流")
+
+**字符流尽量去操作文本文件，如果去操作二进制文件（声音、视频、doc、pdf）有可能会造成损失（确实会损坏）**
+
+#### BufferedReader
+
+![image-20240528235026195](./assets/image-20240528235026195.png)
+
+![image-20240528235103654](./assets/image-20240528235103654.png)
+
+```java
+import java.io.*;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * BufferedReader 缓冲流
+ */
+public class Ceshi {
+    public static void main(String[] args) {
+        String filePath="D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\hello.txt";
+        BufferedReader bufferedReader = null;
+        try {
+            bufferedReader=new BufferedReader(new FileReader(filePath));
+            String line="";
+            while ((line=bufferedReader.readLine())!=null){
+                System.out.println(line);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally {
+            if(bufferedReader!=null){
+                try {
+                    bufferedReader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+
+    }
+}
+```
+
+#### BufferedWriter
+
+由于BufferedWriter 没有提供可以追加的构造器，所以是以它的内部，比如new FileWriter(filePath，true) 表示追加
+
+```java
+import java.io.*;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * BufferedWriter 缓冲流
+ */
+public class Ceshi {
+    public static void main(String[] args) {
+        String filePath="D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\hello2.txt";
+        BufferedWriter bufferedWriter = null;
+        try {
+            bufferedWriter=new BufferedWriter(new FileWriter(filePath，true));
+            bufferedWriter.write("hello 王俊彪~");
+            bufferedWriter.newLine();
+            bufferedWriter.write("hello 王俊彪！");
+            bufferedWriter.newLine();
+            bufferedWriter.write("hello 王俊彪……");
+            bufferedWriter.newLine();
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally {
+            if(bufferedWriter!=null){
+                try {
+                    bufferedWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+
+    }
+}
+```
+
+#### 文件拷贝
+
+```java
+import java.io.*;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 缓冲字符流，拷贝文件
+ */
+public class Ceshi {
+    public static void main(String[] args) {
+        String srcFilePath="D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\d\\hello.txt";
+        String destFilePath="D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\e\\hello.txt";
+        BufferedReader bufferedReader = null;
+        BufferedWriter bufferedWriter =null;
+		//如果要拷贝二进制（声音、视频、doc、pdf）不要用BufferedReader，BufferedWriter。会造成文件损毁
+        try {
+            bufferedReader=new BufferedReader(new FileReader(srcFilePath));
+            bufferedWriter=new BufferedWriter(new FileWriter(destFilePath));
+            String line ="";
+            while((line=bufferedReader.readLine())!=null){
+                bufferedWriter.write(line);
+                bufferedWriter.newLine();
+            }
+            System.out.println("拷贝完毕~");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if(bufferedReader!=null){
+                    bufferedReader.close();
+                }
+                if(bufferedWriter!=null){
+                    bufferedWriter.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+    }
+}
+```
+
+### 第4组、BufferedInputStream , BufferedOutputStream (字节输入输出流的包装流"缓冲流")
+
+#### 文件拷贝
+
+![image-20240529105314978](./assets/image-20240529105314978.png)
+
+![d8a0fddc73dec61347d71a96b8c9503](./assets/d8a0fddc73dec61347d71a96b8c9503.png)
+
+```java
+import java.io.*;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 字节输入输出流的缓冲流，拷贝文件
+ */
+public class Ceshi {
+    public static void main(String[] args) {
+        String srcFilePath="D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\d\\wb.png";
+        String destFilePath="D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\e\\wb2.png";
+
+        BufferedInputStream bufferedInputStream=null;
+        BufferedOutputStream bufferedOutputStream=null;
+
+        try {
+           bufferedInputStream=new BufferedInputStream(new FileInputStream(srcFilePath));
+           bufferedOutputStream=new BufferedOutputStream(new FileOutputStream(destFilePath));
+           int readLen=0;
+           //提高效率用一个数组
+            byte [] buf = new byte[1024];//这里1024是自己定的，如果还是用8的话，显的太小了"学一手"
+           while ((readLen=bufferedInputStream.read(buf))!=-1){
+               System.out.println(readLen);
+               bufferedOutputStream.write(buf,0,readLen);
+           }
+            System.out.println("拷贝完毕~");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if(bufferedInputStream!=null){
+                    bufferedInputStream.close();
+                }
+                if(bufferedOutputStream!=null){
+                    bufferedOutputStream.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+    }
+}
+```
+
+### 第5组、ObjectInputStream , ObjectOutputStream (**对象流**，提供序列化和反序列化功能)
+
+出现一种新需求:在保存的时候可以把类型也保存上去
+
+![image-20240529143824414](./assets/image-20240529143824414.png)
+
+#### ObjectInputStream
+
+![image-20240529143919661](./assets/image-20240529143919661.png)
+从图中构造器可以知道，它接收一个InputStream，所以是一个包装流，并且继承InputStream
+
+```java
+import java.io.*;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * ObjectInputStream 对象流读入
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) {
+        //序列化后保存的文体格式不是纯文本，这里的.txt 没什么实际意义
+        String filePath = "D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\date.dat";
+        ObjectInputStream ois = null;
+
+        try {
+            ois = new ObjectInputStream(new FileInputStream(filePath));
+            //读入int
+            System.out.println(ois.readInt());
+            //读入boolean
+            System.out.println(ois.readBoolean());
+            //读入char
+            System.out.println(ois.readChar());
+            //读入double
+            System.out.println(ois.readDouble());
+            //读入字符串
+            System.out.println(ois.readUTF());//String 类也实现了Serializable接口
+            //读入一个dog 对象，记得这个dog要实现Serializable接口序列化
+            Dog dog2 = (Dog) ois.readObject();
+            System.out.println(dog2.getClass());//底层会 Object->Dog,所以会出现一个异常，在这里它的运行类型就是Dog了
+            //如果我们需要使用Dog对象要进行向下转型
+            System.out.println(dog2.getName() +" , " + dog2.getAge());
+            System.out.println("读入完成~");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (ois != null) {
+                try {
+                    ois.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+}
+
+class Dog implements Serializable {
+    private String name;
+    private int age;
+    private String nation;
+    private String color;
+    private static final long serialVersionUID = 1L;
+    public Dog(String name, int age, String nation, String color) {
+        this.name = name;
+        this.age = age;
+        this.nation = nation;
+        this.color = color;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public String getNation() {
+        return nation;
+    }
+
+    public void setNation(String nation) {
+        this.nation = nation;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+}
+```
+
+#### ObjectOutputStream
+
+![image-20240529144228547](./assets/image-20240529144228547.png)
+和ObjectInputStream 一样，都是一个包装流，而且继承了OutputStream
+
+```java
+import java.io.*;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * ObjectOutputStream 对象流写入
+ */
+public class Ceshi implements Serializable{
+    public static void main(String[] args) {
+        //序列化后保存的文体格式不是纯文本，这里的.txt 没什么实际意义
+        String filePath="D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\date.dat";
+        ObjectOutputStream oos = null;
+
+        try {
+            oos=new ObjectOutputStream(new FileOutputStream(filePath));
+            //写入int
+            oos.writeInt(10);
+            //写入boolean
+            oos.writeBoolean(true);
+            //写入char
+            oos.writeChar('h');
+            //写入double
+            oos.writeDouble(9.5);
+            //在底层会进行自动装箱 而他们对应的包装类实现了Serializable 接口，所以可以传输
+            //写入字符串，注意是用UTF()不是用String
+            oos.writeUTF("五俊彪");//String 类也实现了Serializable接口
+            //写入一个dog 对象，记得这个dog要实现Serializable接口序列化
+            oos.writeObject(new Dog("旺财",10,"日本","白色"));
+            System.out.println("写入完成~");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(oos!=null){
+                try {
+                    oos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+
+    }
+}
+class Dog implements Serializable {
+    private String name;
+    private int age;
+    private String nation;
+    private String color;
+
+    public Dog(String name, int age, String nation, String color) {
+        this.name = name;
+        this.age = age;
+        this.nation = nation;
+        this.color = color;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public String getNation() {
+        return nation;
+    }
+
+    public void setNation(String nation) {
+        this.nation = nation;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+}
+```
+
+注意：如果要序列化一个对象那输入输出时的类，必须完全一样
+
+![image-20240529162003839](./assets/image-20240529162003839.png)
+private static final long serialVersionUID = 1L;
+加上这句话可以提高版本兼容性，当加入一个新属性时，系统会认为这是一个版本的升级，并不是一个新的类。
+
+**如果是static 或 transient 修饰的成员**会放弃序列化，就是不保存这个值。读入看一下，发现是null。
+
+**序列化类中的每个属性都要序列化**
+
+```java
+import java.io.*;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 注意的细节
+ */
+public class Ceshi implements Serializable{
+    public static void main(String[] args) {
+        //序列化后保存的文体格式不是纯文本，这里的.txt 没什么实际意义
+        String filePath="D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\date.dat";
+        ObjectOutputStream oos = null;
+
+        try {
+            oos=new ObjectOutputStream(new FileOutputStream(filePath));
+            //写入int
+            oos.writeInt(10);
+            //写入boolean
+            oos.writeBoolean(true);
+            //写入char
+            oos.writeChar('h');
+            //写入double
+            oos.writeDouble(9.5);
+            //在底层会进行自动装箱 而他们对应的包装类实现了Serializable 接口，所以可以传输
+            //写入字符串，注意是用UTF()不是用String
+            oos.writeUTF("五俊彪");//String 类也实现了Serializable接口
+            //写入一个dog 对象，记得这个dog要实现Serializable接口序列化
+            oos.writeObject(new Dog("旺财",10,"日本","白色"));
+            System.out.println("写入完成~");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(oos!=null){
+                try {
+                    oos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+
+    }
+}
+class Dog implements Serializable {
+    private String name;
+    private int age;
+    private String nation;
+    private String color;
+    //序列化时，要求里面属性的类型也需要实现序列化接口
+    private Master master= new Master();
+    //提高兼容性
+    private static final long serialVersionUID = 1L;
+    public Dog(String name, int age, String nation, String color) {
+        this.name = name;
+        this.age = age;
+        this.nation = nation;
+        this.color = color;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public String getNation() {
+        return nation;
+    }
+
+    public void setNation(String nation) {
+        this.nation = nation;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+}
+```
+
+### 第6组、InputStreamReader , OutputStreamWriter(转换流，把字节流转换成字符流)
+
+使用字符流的必要性，当处理纯文本数据时，如果 使用字符流效率更高，并且可以有效解决中文问题，所以建议将字节流转换成字符流
+
+```java
+import java.io.*;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 转换流的必要性
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) {
+        String filePath = "D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\hello.txt";
+        BufferedReader bufferedReader =null;
+        try {
+            //默认读取方式是按utf-8读取的。比如，如果文件是ANSI国标码存储的，那么字符流去读汉字就会乱码
+            bufferedReader = new BufferedReader(new FileReader(filePath));
+            String line="";
+            line = bufferedReader.readLine();
+            System.out.println(line);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally {
+            if(bufferedReader!=null){
+                try {
+                    bufferedReader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+}
+```
+
+所以就需要字节流转换成的字符流，并且字节流可以指定编码
+
+![image-20240529181622904](./assets/image-20240529181622904.png)![image-20240529181929165](./assets/image-20240529181929165.png)
+都属于字符流。
+
+#### InputStreamReader
+
+![image-20240529181736249](./assets/image-20240529181736249.png)
+指定编码的构造器
+
+```java
+import java.io.*;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 使用了转换流后，就可以读入数据不乱码了
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) {
+        String filePath = "D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\hello.txt";
+        BufferedReader bufferedReader =null;
+        try {
+            //默认读取方式是按utf-8读取的。比如，如果文件是ANSI国标码存储的，
+            bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath), "gbk"));
+            String line="";
+            line = bufferedReader.readLine();
+            System.out.println(line);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally {
+            if(bufferedReader!=null){
+                try {
+                    bufferedReader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+}
+
+
+```
+
+#### OutputStream
+
+![8d629fb2e3deb8db2b10e9ebd3460d7](./assets/8d629fb2e3deb8db2b10e9ebd3460d7.png)
+
+```java
+import java.io.*;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 使用gbk/utf-8/utf8编码写入文件
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) {
+        String filePath = "D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\hello3.txt";
+        BufferedWriter bw =null;
+        String charSet ="gbk";//编码用变量存储"学一手"
+        try {
+            bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filePath), charSet));
+            bw.write("123风雨之后 ，必风彩虹！");
+            System.out.println("写入成功~");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(bw!=null){
+                try {
+                    bw.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+}
+
+
+```
+
+### 扩展
+
+#### 输入输出流
+
+![image-20240529184916862](./assets/image-20240529184916862.png)
+System.in的实际运行类型是BufferInputStream
+
+#### 打印流
+
+打印流是用于打印的，所以只有输出流没有输入流
+
+##### PrintStream:字节打印流
+
+![image-20240529184214809](./assets/image-20240529184214809.png)
+（是一个字节流)
+
+![image-20240529184337381](./assets/image-20240529184337381.png)
+看构造器，打印流不仅仅只是可以打印在显示器上，也可以打印到一个文件里面去 
+
+```java
+import java.io.*;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * PrintStream 使用，切换打印位置
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) {
+        String filePath = "D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\hello3.txt";
+        //正常使用
+        PrintStream out = System.out;
+        //默认情况下，输出的位置是标准输出，即显示器
+        out.print("您好 world~");
+
+        try {
+            out.write("王俊彪".getBytes());//print 的本质是write 这两个用那个都可以
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        out.close();
+
+        //修改打印输出位置的方法
+        try {
+            System.setOut(new PrintStream("D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\hello3.txt"));
+             //printStream.write("您好，王".getBytes());
+            System.out.println("您好，王俊彪！");//在指定位置打印
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+    }
+}
+```
+
+
+
+##### PrintWriter:字符打印流
+
+![b091493c1728ad455d1e5905ce2a76b](./assets/b091493c1728ad455d1e5905ce2a76b.png)
+(是一个字符流)
+
+![097716078c0a94506a29a393d56b212](./assets/097716078c0a94506a29a393d56b212.png)
+和字节打印流一个德性的，可以打印到不用的地方
+
+```java
+import java.io.*;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * PrintWriter 使用，切换打印位置
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) {
+        String filePath = "D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\hello3.txt";
+        PrintStream printStream = new PrintStream(System.out);
+        try {
+            //第一种
+            //printStream.write("您好，王".getBytes());
+            //第二种
+            System.setOut(new PrintStream("D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\hello3.txt"));
+            //printStream.write("您好，王".getBytes());
+            System.out.println("您好，王");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            printStream.close();
+        }
+
+
+    }
+}
+```
+
+### properties(配置文件)
+
+#### 引出properites 配置文件
+
+![image-20240529191449336](./assets/image-20240529191449336.png)
+如果要换数据库，或者换用户名密码，就要改源码，这不现实呀，程序写完在改就是伤筋动骨的事，灵活性太差，所以就要用到配置文件
+
+![image-20240529191822380](./assets/image-20240529191822380.png)
+传统方法，比如只获取ip 就要遍历判断就比较麻烦。
+
+#### properties类
+
+![image-20240529192023161](./assets/image-20240529192023161.png)
+
+**固定要求，文件的格式不能乱写（用等号）**
+
+![image-20240529192303855](./assets/image-20240529192303855.png)
+
+如果含有中文存的是unicode编码
+
+##### 读文件
+
+```java
+import java.io.*;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * Properties 读文件
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) {
+       String filePath = "src/mySql.properties";
+        Properties properties = new Properties();
+        try {
+            //默认汉字是unicode 编码的，这里不知道unicode怎么写就用的gbk
+            properties.load(new InputStreamReader(new FileInputStream(filePath),"gbk"));
+            //显示在控制台
+            properties.list(System.out);
+            //根据key 获取对应的值
+            System.out.println("用户名= "+properties.getProperty("user"));
+            System.out.println("密码= "+properties.getProperty("password"));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+    }
+}
+```
+
+##### 创建/修改 文件
+
+创建
+
+```java
+import java.io.*;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * properties 创建
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) {
+       String filePath = "src/mySql.properties";
+        Properties properties = new Properties();
+
+        //创建
+        properties.setProperty("charset","utf8");
+        properties.setProperty("user","汤姆");
+        properties.setProperty("password","123456");
+        //写进去
+        try {
+            properties.store(new OutputStreamWriter(new FileOutputStream(filePath),"utf8"),"hello world");
+            System.out.println("保存配置文件成功~");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+
+        }
+
+    }
+}
+```
+
+![image-20240529195338549](./assets/image-20240529195338549.png)
+这里用了转换流，不用转换流的话，汤姆应该是unicode编码。store的第二个参数是注释的意思 
+
+##### 本章作业
+
+```java
+import java.io.*;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 作业3
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) throws IOException {
+       String filePath = "src/dog.properties";
+       String destFilePath="D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\dog.txt";
+        Properties properties = new Properties();
+        properties.load(new FileReader(filePath));
+        //创建
+        properties.setProperty("name","tom");
+        properties.setProperty("age","5");
+        properties.setProperty("color","red");
+
+        try {
+            properties.store(new FileWriter(filePath),null);
+            System.out.println("创建成功~");
+        } catch (IOException e) {
+            e.printStackTrace();
+
+        }
+        Dog dog = new Dog(properties.getProperty("name"), Integer.parseInt(properties.getProperty("age")), properties.getProperty("color"));
+        System.out.println(dog);
+        //序列化
+        ObjectOutputStream oos =null;
+        try {
+            oos = new ObjectOutputStream(new FileOutputStream(destFilePath));
+            oos.writeObject(dog);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally {
+            try {
+                oos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+    }
+}
+class Dog implements Serializable{
+    private String name;
+    private int age;
+    private String color;
+
+    public Dog(String name, int age, String color) {
+        this.name = name;
+        this.age = age;
+        this.color = color;
+    }
+
+    @Override
+    public String toString() {
+        return "Dog{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                ", color='" + color + '\'' +
+                '}';
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+}
+```
+
+## 反射
+
+有难度，比较重要，尤其后面学框架的基本原理，和框架的底层，不懂反射机制几乎看懂。如果自己写框架更需要用到反射
+
+![image-20240530141723831](./assets/image-20240530141723831.png)
+
+### 为什么需要反射
+
+![image-20240530143408851](./assets/image-20240530143408851.png)
+现有的技术解决不了问题。
+这是设计模式下最重要的一个原则，ocp原则：在不修改源码的情况下，来控制程序。
+
+### 反射的快速入门
+
+```java
+import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 反射的快速入门程序 ，解决上面的问题
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+        //使用 Properties 类，可以读写配置文件
+        Properties properties = new Properties();
+        properties.load(new FileReader("src/re.properties"));
+        String classfullpath = properties.getProperty("classfullpath");
+        String methodName = properties.getProperty("method");
+        System.out.println(classfullpath+","+methodName);
+
+        //传统方法，创建对象,发现行不通
+        //new classfullpath()
+        //使用反射机制进行解决！
+        //(1)加载类，返回Class类型的类cls
+        Class cls = Class.forName(classfullpath);
+        //(2)通过 cls 得到你加载的类 （edu.Cat） 的对象实例
+        Object o = cls.newInstance();
+        System.out.println(o.getClass());//看一下这个对象实例的运行类型是不是edu.Cat
+        //(3)通过 cls 得到你加载的类 （edu.Cat） 的 methodName 方法
+        //   在反射中，可以把方法视为对象（万物皆对象）
+        Method method = cls.getMethod(methodName);
+        //(4)通过method 调用方法，即：方法对象来实现调用方法
+        method.invoke(o);//传统方法，对象.方法（），反射机制 方法.invoke(对象)
+        //这个方法相当牛逼的，如果没有这个方法，java 就不是动态语言了，框架也不会存在的
+        //反射机制是框架的灵魂
+
+    }
+}
+```
+
+```java
+classfullpath=edu.Cat
+method=cry
+```
+
+这个时候只需要修改配置文件就可以使功能发生变化 。
+
+### 反射机制
+
+![image-20240530161615917](./assets/image-20240530161615917.png)
+反射机制允许 程序 在执行期借助于ReflectionAPI取得任何类的内部信息，然后进行操作。
+一个类只有一个Class对象，这个对象包含类的完整结构信息，通过这个对象得到类的结构。
+
+#### 反射机制原理图
+
+**java程序 在计算机中有三个阶段**
+
+![image-20240530162200017](./assets/image-20240530162200017.png)
+当在运行阶段时，执行到了new Cat()时，会导致类的加载，加载的就是Cat.class 这个字节码文件 ，
+**目的地：会加载到内存堆里面去，生成Class类**
+**过程：通过类加载器**
+
+其实生成的这个Class类对象其实在堆里面是一个数据结构（我反正不懂，大概意思就是可以操作的数据）会在底层把这个成员变量映射当成 一个对象来看待 
+
+**然后生成的这个Cat 对象知道它自己是属于那个Class对象**（所以我们其实也可以通过这个对象拿到和它关联的那个Class对象）
+
+ 拿到Class对象就可以做很多事情 ，**价值**：1、创建对象2、调用对象方法3、操作属性等  
+
+![image-20240530163700633](./assets/image-20240530163700633.png)
+
+####  反射机制可以做的事情 (使用相关类)
+
+![image-20240530163906127](./assets/image-20240530163906127.png)
+
+![image-20240530164807998](./assets/image-20240530164807998.png)
+
+```java
+import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 反射相关的主要类
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) throws Exception{
+        //使用 Properties 类，可以读写配置文件
+        Properties properties = new Properties();
+        properties.load(new FileReader("src/re.properties"));
+        String classfullpath = properties.getProperty("classfullpath");
+        String methodName = properties.getProperty("method");
+        System.out.println(classfullpath+","+methodName);
+
+        //传统方法，创建对象,发现行不通
+        //new classfullpath()
+        //使用反射机制进行解决！
+        //(1)加载类，返回Class类型的类cls
+        Class cls = Class.forName(classfullpath);
+        //(2)通过 cls 得到你加载的类 （edu.Cat） 的对象实例
+        Object o = cls.newInstance();
+        System.out.println(o.getClass());//看一下这个对象实例的运行类型是不是edu.Cat。class edu.Cat
+        //(3)通过 cls 得到你加载的类 （edu.Cat） 的 methodName 方法
+        //   在反射中，可以把方法视为对象（万物皆对象）
+        Method method = cls.getMethod(methodName);
+        //(4)通过method 调用方法，即：方法对象来实现调用方法
+        method.invoke(o);//传统方法，对象.方法（），反射机制 方法.invoke(对象)
+        //这个方法相当牛逼的，如果没有这个方法，java 就不是动态语言了，框架也不会存在的
+        //反射机制是框架的灵魂
+
+        //Field 对象表示某个类的成员变量
+        //getField 不能得到私有属性
+        Field ageField = cls.getField("age");
+        System.out.println(ageField.get(o));//得到里面的值 反过来写
+
+        //Constructor 对象表示构造器
+        Constructor constructor = cls.getConstructor();//()中可以指定构造器的参数类型，这里返回无参构造器
+        System.out.println(constructor);
+
+        Constructor constructor1 = cls.getConstructor(String.class);//这里传入的String.class 就是String类的Class对象
+        System.out.println(constructor1);
+
+    }
+}
+```
+
+#### 反射优缺点以及优化
+
+![image-20240530171135834](./assets/image-20240530171135834.png)
+
+![image-20240530190054308](./assets/image-20240530190054308.png)
+优化程序不高，但也能优化一点
+
+```java
+import edu.Cat;
+
+import java.lang.reflect.Method;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 测试反射调用的性能和优化方案
+ */
+@SuppressWarnings({"all"})
+public class Reflection {
+    public static void main(String[] args) throws Exception {
+        m1();
+        m2();
+        m3();
+    }
+
+    public static void m1(){
+        Cat cat = new Cat();
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < 900000000; i++) {
+            cat.hi();
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("传统方法调用hi 耗时："+(end-start));
+    }
+
+    public static void m2() throws Exception {
+        Class cls = Class.forName("edu.Cat");
+        Object o = cls.newInstance();
+        Method hi = cls.getMethod("hi");
+
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < 900000000; i++) {
+            hi.invoke(o);//反射机制调用
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("反射机制调用hi 耗时："+(end-start));
+    }
+    //反射调用优化（关闭访问检查）
+    public static void m3() throws Exception {
+        Class cls = Class.forName("edu.Cat");
+        Object o = cls.newInstance();
+        Method hi = cls.getMethod("hi");
+
+        hi.setAccessible(true);//在反射调用方法时，取消访问检查
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < 900000000; i++) {
+            hi.invoke(o);//反射机制调用
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("反射机制调用hi(优化) 耗时："+(end-start));
+    }
+}
+```
+
+## Class类
+
+![image-20240530191523232](./assets/image-20240530191523232.png)
+Class类的父类仍然是Object，从这个类图来看可以看出Class类就是一个类，它和别的类是一样的，只是这个类的使用方法，和完成功能有特殊性。仅此而已。
+
+![image-20240530194906950](./assets/image-20240530194906950.png)
+
+1、Class 类对象不是new 出来的，而是系统创建的
+![image-20240530192058643](./assets/image-20240530192058643.png)
+通过类加载器ClassLoader这个类的loadClass()方法完成类加载，然后生成对应的Class对象
+
+![image-20240530192556531](./assets/image-20240530192556531.png)
+传统方法new 的时候也是会去调用loadClass方法
+![image-20240530192803532](./assets/image-20240530192803532.png)
+Class反射创建也是
+
+2、对于某个类的Class 类的对象，在内存中只有一份，因为类只加载一次
+![image-20240530193031416](./assets/image-20240530193031416.png)
+![image-20240530193358223](./assets/image-20240530193358223.png)
+
+3、通过Class对象可以完整地得到一个类的完整结构 ，通过一系列API
+![image-20240530195132131](./assets/image-20240530195132131.png)
+
+ 4、类的字节码二进制数据，是放在方法区的，有的地方称为类的元数据（包括 方法 ， 变量，访问权限等等）
+![image-20240530195450112](./assets/image-20240530195450112.png)
+ 把二进制数据映射成数据结构当作对象，更容易操作
+
+## Class常用方法
+
+```java
+import edu.Cat;
+
+import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * Class类的常用方法
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) throws Exception{
+        //类的全路径
+        String classAllPath = "edu.Cat";
+        //获取car 类对应的Class 类对象
+        //<?>泛型 可以接受所有的java类型
+        Class<?> cls = Class.forName(classAllPath);
+        //输出 cls
+        System.out.println(cls);//显示cls 对象是哪个类的Class 对象  class edu.Cat
+        System.out.println(cls.getClass());//显示 编译类型是什么  class java.lang.Class
+        //得到包名
+        System.out.println(cls.getPackage().getName());//edu,有多级的话每一级都显示
+        //得到全类名
+        System.out.println(cls.getName());//edu.Cat
+        //通过 cls 创建对象实例
+        Cat cat = (Cat)cls.newInstance();
+        System.out.println(cat);//edu.Cat@1b6d3586
+        //通过反射获取 cat 中的属性
+        Field age = cls.getField("age");//公共的
+        System.out.println(age.get(cat));//有点意思，实实在在的Car 可以转，这样拿到呀 10
+        //通过反射给属性赋值
+        age.set(cat,200);
+        System.out.println(age.get(cat));//200
+        //希望得到所有属性
+        System.out.println("=========所有字段属性==========");
+        Field[] fields = cls.getFields();
+        for(Field f:fields){
+            System.out.println(f.getName());//所有公共的名称
+        }
+
+    }
+}
+```
+
+## 获取Class 类的6种方式（常用4种）
+
+![image-20240530202805288](./assets/image-20240530202805288.png)
+
+![image-20240530203912694](./assets/image-20240530203912694.png)
+
+![image-20240530204314366](./assets/image-20240530204314366.png)
+
+![image-20240530204419613](./assets/image-20240530204419613.png)
+第3种真正加载进来的就是它的运行类型，对象.getClass()
+
+```java
+import edu.Cat;
+
+import java.io.*;
+import java.lang.reflect.Field;
+
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 得到Class 对象的各种方式（6）
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) throws Exception{
+        //1、如果已经知道了全类名，多用于配置文件
+        String classAllPath = "edu.Cat";
+        Class<?> cls1 = Class.forName(classAllPath);
+        System.out.println(cls1);
+        //2、多用于参数传递
+        Class cls2 = Cat.class;
+        System.out.println(cls2);
+        //3、其实就是它的运行类型，真正加载进来的,用于有对象的实例
+        Cat cat = new Cat();
+        Class cls3 = cat.getClass();
+        System.out.println(cls3);
+        //4、通过类加载器【4种】（只简单过一下）来获取到类的class对象
+        //先得到car 的类加载器
+        ClassLoader classLoader = cat.getClass().getClassLoader();
+        //通过类加载器得到Class对象
+        Class cls4 = classLoader.loadClass(classAllPath);
+        System.out.println(cls4);
+
+        //而且我们还知道，这四个cls1 cls2 cls3 cls4是同一个对象
+        System.out.println(cls1.hashCode());
+        System.out.println(cls2.hashCode());
+        System.out.println(cls3.hashCode());
+        System.out.println(cls4.hashCode());
+
+    }
+}
+       /* "D:\IDEA\IntelliJ IDEA 2020.2.2\JDK\bin\java.exe"
+        class edu.Cat
+        class edu.Cat
+        class edu.Cat
+        class edu.Cat
+        460141958
+        460141958
+        460141958
+        460141958
+
+        Process finished with exit code 0
+        */
+
+```
+
+![image-20240530210829510](./assets/image-20240530210829510.png)
+
+```java
+import edu.Cat;
+
+import java.io.*;
+import java.lang.reflect.Field;
+
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 得到Class 对象的各种方式（6）
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) throws Exception{
+        //5、基本数据类型按以下方式得到class对象
+        //会自动进行装箱和拆箱，输出的时候还是基本数据类型，如int
+        Class<Integer> integerClass = int.class;
+        Class<Character> characterClass = char.class;
+        Class<Boolean> booleanClass = boolean.class;
+        System.out.println(integerClass);//int
+
+        //6、基本数据类型对应的包装类通过TYPE，获取class对象
+        Class<Integer> type1 = Integer.TYPE;//int
+        Class<Character> type2 = Character.TYPE;//其他包装类就不演示了
+        System.out.println(type1);
+
+        //因为包装类的底层是基本数据类型，所以这里的hashCode是相等的。
+        System.out.println(integerClass.hashCode());
+        System.out.println(type1.hashCode());
+
+    }
+}
+```
+
+#### 哪些类型有Class 对象
+
+![image-20240530211403717](./assets/image-20240530211403717.png)
+
+![image-20240530211546024](./assets/image-20240530211546024.png)
+
+## 类加载！
+
+### 静态加载和动态加载
+
+![image-20240530233535313](./assets/image-20240530233535313.png)
+静态加载：编译时加载类
+动态加载：运行时加载类
+
+![image-20240530232312429](./assets/image-20240530232312429.png)
+![image-20240530233303432](./assets/image-20240530233303432.png)
+
+```java
+import edu.Cat;
+
+import java.io.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Scanner;
+
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 静态加载和动态加载
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) throws Exception {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("请输入key：");
+        String key = scanner.next();
+        switch (key) {
+            case "1":
+//                Dog dog = new Dog();//静态加载，依赖性很强
+//                dog.cry();
+                break;
+            case "2":
+                //反射 -》动态加载
+                Class<?> cls = Class.forName("edn.Cat");//加载Person类[动态加载]
+                Object o = cls.newInstance();
+                Method method = cls.getMethod("hi");
+                method.invoke(o);
+                System.out.println("ok");
+                break;
+            default:
+                System.out.println("do nothing...");
+        }
+
+    }
+}
+```
+
+### 类加载流程图
+
+![image-20240530235030022](./assets/image-20240530235030022.png)
+java运行的时候就会对字节码文件进行装载(类加载)
+类加载里面分三个阶段，加载、连接（验证、准备、解析)、初始化
+
+验证：对文件安全进行校验，比如文件格式是否正确，比如源数据验证是否正确，符号引用是否是可以的
+准备：对静态变量分配内存，并且完成**默认初始化** 
+解析：将常量池中的符号引用替换为直接引用 
+
+初始化：才会真正执行在类中定义的java代码，并且完成**指定初始化**
+
+当加载完毕后会在内存出现两个重要部分，在方法区：字节码以二进制的形式保存起来。堆区：生成字码对应的数据结构 。它们两个之间的引用就体现出了反射机制
