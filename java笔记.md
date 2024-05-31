@@ -9,7 +9,11 @@
 
 类的五大成员是哪些？（属性、方法、构造器、代码块、内部类）
 
+## **类变量访问范围**？
 
+## **静态代码块**？
+
+## final关键字
 
 ## 泛型？
 
@@ -2432,7 +2436,7 @@ public class Reflection {
 }
 ```
 
-## Class类
+### Class类
 
 ![image-20240530191523232](./assets/image-20240530191523232.png)
 Class类的父类仍然是Object，从这个类图来看可以看出Class类就是一个类，它和别的类是一样的，只是这个类的使用方法，和完成功能有特殊性。仅此而已。
@@ -2459,7 +2463,7 @@ Class反射创建也是
 ![image-20240530195450112](./assets/image-20240530195450112.png)
  把二进制数据映射成数据结构当作对象，更容易操作
 
-## Class常用方法
+### Class常用方法
 
 ```java
 import edu.Cat;
@@ -2512,7 +2516,349 @@ public class Ceshi implements Serializable {
 }
 ```
 
-## 获取Class 类的6种方式（常用4种）
+### 通过反射获取类的结构信息
+
+![image-20240531170546227](./assets/image-20240531170546227.png)
+
+```java
+package edu;
+
+import java.io.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 反射获取类的结构信息
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) throws Exception {
+        Class<?> personCls = Class.forName("edu.Person");
+        System.out.println(personCls);//显示全类名 class edu.Person
+        System.out.println(personCls.getClass());//编译类型 class java.lang.Class
+        System.out.println(personCls.getName());//显示全类名 edu.Person
+        System.out.println(personCls.getSimpleName());//获取简单类名 Person
+        Field[] fields = personCls.getFields();//获取本类中所有public 修饰的属性，包含父类的
+        for (Field field : fields) {//增强for循环快捷键 fields.for回车
+            System.out.println("本类以及父类的属性= "+field.getName());//本类以及父类的属性= name  本类以及父类的属性= hobby
+            }
+        Field[] declaredFields = personCls.getDeclaredFields();
+        for (Field declaredField : declaredFields) {
+            System.out.println("本类所有的属性="+declaredField.getName());
+        }
+        Method[] methods = personCls.getMethods();//本类以及父类的方法
+        for (Method method : methods) {
+            System.out.println("本类以及父类的方法="+method.getName());
+        }
+        Method[] declaredMethods = personCls.getDeclaredMethods();//本类中所有的方法
+        for (Method declaredMethod : declaredMethods) {
+            System.out.println("本类中所有的方法="+declaredMethod.getName());
+        }
+        Constructor<?>[] constructors = personCls.getConstructors();//本类中所有public修饰的构造器，没有父类
+        for (Constructor<?> constructor : constructors) {
+            System.out.println("本类的构造器="+constructor.getName());
+        }
+        Constructor<?>[] declaredConstructors = personCls.getDeclaredConstructors();
+        for (Constructor<?> declaredConstructor : declaredConstructors) {
+            System.out.println("本类中所有的构造器="+declaredConstructor.getName());
+        }
+        System.out.println(personCls.getPackage());//返回包信息 package edu
+        System.out.println(personCls.getSuperclass());//返回父类信息 class edu.A
+        Class<?>[] interfaces = personCls.getInterfaces();//返回接口信息
+        for (Class<?> anInterface : interfaces) {
+            System.out.println("接口信息"+anInterface.getName());
+        }
+        Annotation[] annotations = personCls.getAnnotations();//返回注解信息
+        for (Annotation annotation : annotations) {
+            System.out.println("注解信息="+annotation);
+        }
+
+    }
+}
+class A{
+    public String hobby;
+    public void hi(){}
+    public A(){
+
+    }
+    public A(String name){
+
+    }
+}
+interface IA{}
+interface IB{}
+@Deprecated
+class Person extends A implements IA,IB{
+    public Person(){
+
+    }
+    public Person(String age){
+
+    }
+    //私有的。
+    private Person(String name,int age){
+
+    }
+    //属性
+    public String name;
+    protected int age;
+    String job;
+    private double sal;
+    //方法
+    public void m1(){
+
+    }
+    protected void m2(){
+
+    }
+    void m3(){
+
+    }
+    private void m4(){
+
+    }
+}
+```
+
+![image-20240531171935571](./assets/image-20240531171935571.png)
+
+```java
+package edu;
+
+import java.io.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 反射获取类的结构信息
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) throws Exception {
+        Class<?> personCls = Class.forName("edu.Person");
+        Field[] declaredFields = personCls.getDeclaredFields();
+        for (Field declaredField : declaredFields) {
+            System.out.println("本类所有的属性="+declaredField.getName()
+                    +"  ,  该属性的修饰符值="+declaredField.getModifiers()
+                    +" ,  该属性的类型="+declaredField.getType());
+        }
+//        本类所有的属性=name  ,  该属性的修饰符值=1 ,  该属性的类型=class java.lang.String
+//        本类所有的属性=age  ,  该属性的修饰符值=4 ,  该属性的类型=int
+//        本类所有的属性=job  ,  该属性的修饰符值=0 ,  该属性的类型=class java.lang.String
+//        本类所有的属性=sal  ,  该属性的修饰符值=2 ,  该属性的类型=double
+    }
+}
+class A{
+    public String hobby;
+    public void hi(){}
+    public A(){
+
+    }
+    public A(String name){
+
+    }
+}
+interface IA{}
+interface IB{}
+@Deprecated
+class Person extends A implements IA,IB{
+    public Person(){
+
+    }
+    public Person(String age){
+
+    }
+    //私有的。
+    private Person(String name,int age){
+
+    }
+    //属性
+    public String name;
+    protected int age;
+    String job;
+    private double sal;
+    //方法
+    public void m1(){
+
+    }
+    protected void m2(){
+
+    }
+    void m3(){
+
+    }
+    private void m4(){
+
+    }
+}
+```
+
+![image-20240531180326047](./assets/image-20240531180326047.png)
+
+```java
+package edu;
+
+import java.io.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 反射获取类的结构信息
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) throws Exception {
+        Class<?> personCls = Class.forName("edu.Person");
+        Method[] declaredMethods = personCls.getDeclaredMethods();//本类中所有的方法
+        for (Method declaredMethod : declaredMethods) {
+            System.out.println("本类中所有的方法="+declaredMethod.getName()
+                    +"  ,  该方法的修饰符值="+declaredMethod.getModifiers()
+                    +"  ,  该方法的返回类型="+declaredMethod.getReturnType());
+            //输出当前这个数组的形参数组情况
+            Class<?>[] parameterTypes = declaredMethod.getParameterTypes();
+            for (Class<?> parameterType : parameterTypes) {
+                System.out.println(declaredMethod.getName()+" 该方法的形参类型= "+parameterType);
+            }
+        }
+//        本类中所有的方法=m1  ,  该方法的修饰符值=1  ,  该方法的返回类型=class java.lang.String
+//        m1 该方法的形参类型= class java.lang.String
+//        m1 该方法的形参类型= int
+//        m1 该方法的形参类型= double
+//        本类中所有的方法=m2  ,  该方法的修饰符值=4  ,  该方法的返回类型=void
+//        本类中所有的方法=m3  ,  该方法的修饰符值=0  ,  该方法的返回类型=void
+//        本类中所有的方法=m4  ,  该方法的修饰符值=2  ,  该方法的返回类型=void
+    }
+}
+class A{
+    public String hobby;
+    public void hi(){}
+    public A(){
+
+    }
+    public A(String name){
+
+    }
+}
+interface IA{}
+interface IB{}
+@Deprecated
+class Person extends A implements IA,IB{
+    public Person(){
+
+    }
+    public Person(String age){
+
+    }
+    //私有的。
+    private Person(String name,int age){
+
+    }
+    //属性
+    public String name;
+    protected int age;
+    String job;
+    private double sal;
+    //方法
+    public String m1(String name,int age,double sal){
+        return null;
+    }
+    protected void m2(){
+
+    }
+    void m3(){
+
+    }
+    private void m4(){
+
+    }
+}
+```
+
+![image-20240531182428290](./assets/image-20240531182428290.png)
+
+```java
+package edu;
+
+import java.io.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 反射获取类的结构信息
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) throws Exception {
+        Class<?> personCls = Class.forName("edu.Person");
+        Constructor<?>[] declaredConstructors = personCls.getDeclaredConstructors();
+        for (Constructor<?> declaredConstructor : declaredConstructors) {
+            System.out.println("本类中所有的构造器="+declaredConstructor.getName());
+            Class<?>[] parameterTypes = declaredConstructor.getParameterTypes();
+            for (Class<?> parameterType : parameterTypes) {
+                System.out.println(declaredConstructor.getName()+" 该构造器的形参类型= "+parameterType);
+            }
+            System.out.println("================");
+        }
+    }
+}
+class A{
+    public String hobby;
+    public void hi(){}
+    public A(){
+
+    }
+    public A(String name){
+
+    }
+}
+interface IA{}
+interface IB{}
+@Deprecated
+class Person extends A implements IA,IB{
+    public Person(){
+
+    }
+    public Person(String age){
+
+    }
+    //私有的。
+    private Person(String name,int age){
+
+    }
+    //属性
+    public String name;
+    protected int age;
+    String job;
+    private double sal;
+    //方法
+    public String m1(String name,int age,double sal){
+        return null;
+    }
+    protected void m2(){
+
+    }
+    void m3(){
+
+    }
+    private void m4(){
+
+    }
+}
+```
+
+### 获取Class 类的6种方式（常用4种）
 
 ![image-20240530202805288](./assets/image-20240530202805288.png)
 
@@ -2614,15 +2960,15 @@ public class Ceshi implements Serializable {
 }
 ```
 
-#### 哪些类型有Class 对象
+##### 哪些类型有Class 对象
 
 ![image-20240530211403717](./assets/image-20240530211403717.png)
 
 ![image-20240530211546024](./assets/image-20240530211546024.png)
 
-## 类加载！
+### 类加载！
 
-### 静态加载和动态加载
+#### 静态加载和动态加载
 
 ![image-20240530233535313](./assets/image-20240530233535313.png)
 静态加载：编译时加载类
@@ -2671,7 +3017,9 @@ public class Ceshi implements Serializable {
 }
 ```
 
-### 类加载流程图
+#### 类加载流程图
+
+![image-20240531120127133](./assets/image-20240531120127133.png)
 
 ![image-20240530235030022](./assets/image-20240530235030022.png)
 java运行的时候就会对字节码文件进行装载(类加载)
@@ -2684,3 +3032,329 @@ java运行的时候就会对字节码文件进行装载(类加载)
 初始化：才会真正执行在类中定义的java代码，并且完成**指定初始化**
 
 当加载完毕后会在内存出现两个重要部分，在方法区：字节码以二进制的形式保存起来。堆区：生成字码对应的数据结构 。它们两个之间的引用就体现出了反射机制
+
+![image-20240531122146922](./assets/image-20240531122146922-1717129307913-1.png)
+静态成员初始化是和类加载关联在一起的。
+
+#### 类加载的五个阶段
+
+##### 加载
+
+![image-20240531144828415](./assets/image-20240531144828415.png)
+
+##### 连接
+
+![image-20240531145313492](./assets/image-20240531145313492.png)
+![1717138425281](./assets/1717138425281.png)
+![1717138454301](./assets/1717138454301.png)
+
+![image-20240531145552228](./assets/image-20240531145552228.png)
+这些变量所使用的内存者将在方法区中进行分配，有些jdk版本的不一样，会放在堆的Class对象后面
+
+![image-20240531153259288](./assets/image-20240531153259288.png)
+不同的属性在准备阶段处理机制是不一样的。
+
+final 和 static 往往搭配使用，效率更高，不会导致类加载，底层编译器做了优化处理
+
+![image-20240531153525690](./assets/image-20240531153525690.png)
+因为在类加载前还没有加载到内存中去，所以这个A类和B类相互是一个相对位置，而加载到内存会给它分配一个固定位置。
+
+##### 初始化
+
+![image-20240531160207233](./assets/image-20240531160207233.png)
+
+![image-20240531160128455](./assets/image-20240531160128455.png)
+
+```java
+import edu.Cat;
+
+import java.io.*;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 初始化 <clinit>()
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) throws Exception {
+        System.out.println(B.n);
+        System.out.println(B.num);//100
+
+    }
+}
+class B{
+    static{
+        System.out.println("静态代码块被执行~");
+        num=300;//加上final 编译就过不去，静态加载
+    }
+    public static int num=100;
+    public final static int  n=200;
+    public B(){
+        System.out.println("构造器被执行！");
+    }
+}
+```
+
+![1717142659536](./assets/1717142659536.png)
+特别牛逼机制，会自动加锁
+![image-20240531160628157](./assets/image-20240531160628157.png)
+![image-20240531160820700](./assets/image-20240531160820700.png)
+保证了即使在多线程下，也不可能产生 多个Class对象
+
+### 通过反射创建对象
+
+![image-20240531184533345](./assets/image-20240531184533345.png)
+
+![](./assets/image-20240531184758332.png)
+
+```java
+package edu;
+
+import java.io.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 反射创建对象（构造器）
+ */
+public class Ceshi implements Serializable {
+    public static void main(String[] args) throws Exception {
+        //1、先获取到User类的Class对象
+        Class<?> userClass = Class.forName("edu.User");
+        //2、通过public的无参构造器创建实例
+        Object o = userClass.newInstance();
+        System.out.println(o);
+        //3、通过public的有参构造器创建实例(带有形参的要先拿到它的构造器，然后去创建实例)
+        Constructor<?> constructor = userClass.getConstructor(String.class);
+        //constructor这个对象就是：
+        // public User(String name) {//有参 public
+        //        this.name = name;
+        //    }
+        Object hsp = constructor.newInstance("hsp");
+        System.out.println(hsp);
+        //4、通过非public的有参构造器创建实例
+        //原则上讲这个私有的构造器，是不能在外面new,但是反射机制是可以的。
+        Constructor<?> declaredConstructor = userClass.getDeclaredConstructor(int.class, String.class);
+        declaredConstructor.setAccessible(true);//爆破【暴力破解】，使用反射可以访问private 构造器，在反射面前一切都是纸老虎
+        Object w = declaredConstructor.newInstance(100, "王俊彪");//因为是私有的，所以会报错，除非使用爆破
+        System.out.println(w);
+    }
+}
+
+class User {
+    private int age = 10;
+    private String name = "韩顺平教育";
+
+    public User() {//无参 public
+
+    }
+
+    public User(String name) {//有参 public
+        this.name = name;
+    }
+
+    private User(int age, String name) {//有参 private
+        this.age = age;
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "age=" + age +
+                ", name='" + name + '\'' +
+                '}';
+    }
+}
+```
+
+### 通过反射访问类中的成员
+
+![image-20240531191507955](./assets/image-20240531191507955.png) 
+
+```java
+package edu;
+
+import java.io.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 反射访问类中的成员
+ */
+public class Ceshi {
+    public static void main(String[] args) throws Exception {
+        Class<?> studentClass = Class.forName("edu.Student");
+        Object o = studentClass.newInstance();//得到对象
+        Field age = studentClass.getField("age");//得到属性
+        System.out.println(age);
+        //设置age的值
+        age.set(o,88);
+        System.out.println(o);//Student{age=88,name=null}
+        System.out.println(age.get(o));//88
+
+        //使用反射操作私有的属性
+        Field name = studentClass.getDeclaredField("name");
+        name.setAccessible(true);
+//        name.set(o,"王俊彪");
+        name.set(null,"王俊彪~");//如果是静态属性也可以写成null,因为静态的是属于所有对象的。
+        System.out.println(name.get(o));
+
+    }
+}
+
+class Student{
+    public int age;
+    private static String name;
+
+    @Override
+    public String toString() {
+        return "Student{" +
+                "age=" + age +
+                ",name=" + name +
+                '}';
+    }
+}
+```
+
+![image-20240531195407544](./assets/image-20240531195407544-1717156448931-6.png)
+
+```java
+package edu;
+
+import java.io.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 通过反射调用方法
+ */
+public class Ceshi {
+    public static void main(String[] args) throws Exception {
+        Class<?> bossCls = Class.forName("edu.Boss");
+        Object o = bossCls.newInstance();//得到对象
+//        Method hi = bossCls.getMethod("hi",String.class);
+        Method hi = bossCls.getDeclaredMethod("hi", String.class);
+        hi.invoke(o,"韩顺平教育");
+        //调用private static方法
+        Method say = bossCls.getDeclaredMethod("say", int.class,String.class,char.class);
+        say.setAccessible(true);
+        System.out.println(say.invoke(o,100,"王俊彪",'w'));
+        System.out.println(say.invoke(null,100,"王俊彪",'男'));
+
+        //在反射中，如果方法有返回值，统一返回Object,但运行类型该是什么还是什么
+
+    }
+}
+
+class Boss{
+    public int age;
+    private static String name;
+
+    public void hi(String s){//普通方法
+        System.out.println("hi "+s);
+    }
+    private static String say(int n ,String s,char c){//静态方法
+        return n+" "+s+" "+c;
+    }
+
+    @Override
+    public String toString() {
+        return "Student{" +
+                "age=" + age +
+                ",name=" + name +
+                '}';
+    }
+}
+```
+
+### 本章作业
+
+
+
+![image-20240531203726045](./assets/image-20240531203726045.png)
+
+```
+package edu;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 本章作业
+ */
+public class Ceshi {
+    public static void main(String[] args) throws Exception {
+        Class<?> prTestCls = Class.forName("edu.PrivateTest");
+        Object o = prTestCls.newInstance();//获取对象
+        Field name = prTestCls.getDeclaredField("name");
+        name.setAccessible(true);
+        name.set(o,"韩顺平");
+        Method method = prTestCls.getMethod("getName");
+        Object invoke = method.invoke(o);
+        System.out.println(invoke);//用Object接收
+
+    }
+}
+class PrivateTest{
+    private String name ="hellokitty";
+
+    public String getName() {
+        return name;
+    }
+}
+```
+
+![image-20240531204601674](./assets/image-20240531204601674.png)
+
+```java
+package edu;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 本章作业
+ */
+public class Ceshi {
+    public static void main(String[] args) throws Exception {
+        Class<?> fileCls = Class.forName("java.io.File");
+        Constructor<?> declaredConstructor = fileCls.getDeclaredConstructor(String.class);
+        declaredConstructor.setAccessible(true);
+        String fileAllPath="D:\\Microsoft账户\\OneDrive\\桌面\\java文件\\class类.txt";
+        Object file = declaredConstructor.newInstance(fileAllPath);//这一步就创建了File对象
+        //得到creat方法
+        Method createNewFile = fileCls.getMethod("createNewFile");
+        createNewFile.invoke(file);
+
+        System.out.println(file.getClass());
+        System.out.println("创建文件成功 "+fileAllPath);
+    }
+}
+```
+
+## MySql数据库
+
+
+
+
+
+
+
