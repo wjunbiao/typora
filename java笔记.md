@@ -3367,3 +3367,1206 @@ public class Ceshi {
 
 ![image-20240616190704452](./assets/image-20240616190704452.png)
 
+![image-20240616193336076](./assets/image-20240616193336076.png)
+
+```java
+package myjdbc;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ */
+public class TestJDBC {
+    public static void main(String[] args) {
+        //完成对mysql 的操作
+//          JdbcInterface jdbcInterface= new MysqlJdbcImpl();
+          JdbcInterface jdbcInterface= new OracleJdbcImpl();//只需要改这一句就能完成从mysql到oracle的转变
+          jdbcInterface.getConnection();//通过接口来调用实现类[动态绑定]
+        jdbcInterface.crud();
+        jdbcInterface.close();
+    }
+}
+
+
+package myjdbc;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 我们规定的jdbc接口（方法）
+ */
+public interface JdbcInterface {
+    //连接
+    public Object getConnection();
+    //crdu
+    public void crud();
+    //关闭连接
+    public void close();
+}
+
+
+package myjdbc;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * mysql 实现jdbc 接口 [模拟]
+ */
+public class MysqlJdbcImpl implements JdbcInterface{
+    @Override
+    public Object getConnection() {
+        System.out.println(" 得到 mysql 的连接");
+        return null;
+    }
+
+    @Override
+    public void crud() {
+        System.out.println(" 实现 mysql 的增删改查");
+
+    }
+
+    @Override
+    public void close() {
+        System.out.println(" 关闭 mysql 的连接");
+
+    }
+}
+
+
+package myjdbc;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * oracle实现jdbc接口
+ */
+public class OracleJdbcImpl implements JdbcInterface{
+    @Override
+    public Object getConnection() {
+        System.out.println("得到 oracle 的连接");
+        return null;
+    }
+
+    @Override
+    public void crud() {
+        System.out.println("完成 oracle 的增删改查");
+
+
+    }
+
+    @Override
+    public void close() {
+        System.out.println("关闭 oracle 的连接");
+
+    }
+}
+```
+
+![image-20240616193430706](./assets/image-20240616193430706.png)
+
+![image-20240616193533129](./assets/image-20240616193533129.png)
+
+![image-20240616193825676](./assets/image-20240616193825676.png)
+
+### JDBC快速入门
+
+![image-20240616194023837](./assets/image-20240616194023837.png)
+
+![image-20240616194333675](./assets/image-20240616194333675.png)
+先创建数据库表
+
+jar包安装教程：https://blog.51cto.com/u_13317/6604966
+
+![image-20240616225402225](./assets/image-20240616225402225.png)
+引入 jar
+
+![image-20240616230221348](./assets/image-20240616230221348.png)
+
+![image-20240616230751297](./assets/image-20240616230751297.png)
+
+![image-20240617002950552](./assets/image-20240617002950552.png)
+
+```java
+package jdbc;
+
+import java.sql.*;
+import java.util.Properties;
+//引包是com.mysql.jdbc.Driver
+import  com.mysql.cj.jdbc.Driver;
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 这是第一个jdbc程序 ，完成简单的操作【四步】
+ */
+public class jdbc01 {
+    public static void main(String[] args) throws SQLException {
+        //注册驱动
+//        com.mysql.jdbc.Driver driver = new com.mysql.jdbc.Driver();
+        Driver driver = new Driver();
+
+        //获取连接
+        String url="jdbc:mysql://localhost:3306/db04";
+        Properties properties = new Properties();
+        //说明：user和password 是规定好，后面的值根据实际情况写
+        properties.setProperty("user","root");//用户
+        properties.setProperty("password","hsp");//密码
+        Connection connect = driver.connect(url, properties);
+
+        //执行操作
+        String sql = "insert into actor value(null,'刘德华4','男','1997-2-1','110')";
+        Statement statement = connect.createStatement();
+        int rows = statement.executeUpdate(sql);
+        System.out.println(rows>0?"成功":"失败");
+        //释放资源
+        statement.close();
+        connect.close();
+    }
+}
+```
+
+### 数据库连接方式
+
+![image-20240617085122918](./assets/image-20240617085122918.png)
+
+这里的Driver是第三方的，静态加载，依赖性比较高
+
+![image-20240617085253451](./../Typora/image-20240617085253451.png)
+
+```java
+package myjdbc;
+import com.mysql.cj.jdbc.Driver;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 分析 java 连接数据库5种方式
+ */
+public class JdbcConn {
+    public static void main(String[] args) throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
+        connect02();
+    }
+    //方式2
+    public static void connect02() throws ClassNotFoundException, IllegalAccessException, InstantiationException, SQLException {
+        //使用反射加载Driver类 动态加载更加灵活，减少依赖性
+        Class<?> aClass = Class.forName("com.mysql.cj.jdbc.Driver");
+        Driver driver = (Driver) aClass.newInstance();
+
+        //获取连接
+        String url="jdbc:mysql://localhost:3306/db04";
+        Properties properties = new Properties();
+        //说明：user和password 是规定好，后面的值根据实际情况写
+        properties.setProperty("user","root");//用户
+        properties.setProperty("password","hsp");//密码
+        Connection connect = driver.connect(url, properties);
+
+        System.out.println("方式2 "+ connect);
+    }
+}
+```
+
+![image-20240617091420133](./assets/image-20240617091420133.png)
+
+```java
+package myjdbc;
+import com.mysql.cj.jdbc.Driver;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 分析 java 连接数据库5种方式
+ */
+public class JdbcConn {
+    public static void main(String[] args) throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
+        connect03();
+    }
+    //方式3 使用DriveManager 来对Drive进行统一管理
+    public static void connect03() throws ClassNotFoundException, IllegalAccessException, InstantiationException, SQLException {
+        //使用反射加载Driver
+        Class<?> aClass = Class.forName("com.mysql.cj.jdbc.Driver");
+        Driver driver = (Driver) aClass.newInstance();
+
+        //创建url和user和password
+        String url="jdbc:mysql://localhost:3306/db04";
+        String username="root";
+        String password="hsp";
+        DriverManager.registerDriver(driver);//注册Driver驱动
+        Connection connection = DriverManager.getConnection(url, username, password);
+        System.out.println("方式3 "+connection);
+
+    }
+}
+```
+
+![image-20240617095000236](./assets/image-20240617095000236.png)
+
+![image-20240618181948201](./assets/image-20240618181948201.png)
+
+```java
+package myjdbc;
+import com.mysql.cj.jdbc.Driver;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 分析 java 连接数据库5种方式
+ */
+public class JdbcConn {
+    public static void main(String[] args) throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
+        connect04();
+    }
+    //方式4  使用反射来加载Driver类，这种方式使用最多，推荐使用。
+    public static void connect04() throws ClassNotFoundException, SQLException {
+        Class<?> aClass = Class.forName("com.mysql.cj.jdbc.Driver");//这句话也可以不写
+        
+        //创建url和user和password
+        String url="jdbc:mysql://localhost:3306/db04";
+        String username="root";
+        String password="hsp";
+
+        Connection connection = DriverManager.getConnection(url, username, password);
+        System.out.println("方式4 "+connection);
+    }
+}
+
+```
+
+![image-20240618182515286](./assets/image-20240618182515286.png)
+![image-20240618182401622](./assets/image-20240618182401622.png)
+
+在启动的时候会自动进行注册
+
+![image-20240618182624306](./assets/image-20240618182624306.png)
+
+```java
+package myjdbc;
+import com.mysql.cj.jdbc.Driver;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 分析 java 连接数据库5种方式
+ */
+public class JdbcConn {
+    public static void main(String[] args) throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException, IOException {
+        connect05();
+    }
+    //方式5 在方式4的基础上改进，增加配置文件，让连接更加灵活
+    public static void connect05() throws IOException, SQLException, ClassNotFoundException {
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("src\\myjdbc\\mysql.properties"));
+        //获取相关值
+        String user = properties.getProperty("user");
+        String password = properties.getProperty("password");
+        String url = properties.getProperty("url");
+        String driver = properties.getProperty("driver");
+        Class<?> aClass = Class.forName(driver);//建议写上
+
+        Connection connection = DriverManager.getConnection(url, user, password);
+        System.out.println("方式5 "+connection);
+
+    }
+}
+```
+
+### 练习
+
+![image-20240618192041788](./assets/image-20240618192041788.png)
+
+### ResultSet
+
+![image-20240618200358494](./assets/image-20240618200358494.png)
+
+![1718712319611](./assets/1718712319611.png)
+
+![image-20240618201826278](./assets/image-20240618201826278.png)
+
+![image-20240618203213828](./assets/image-20240618203213828.png)
+
+
+
+```java
+package myjdbc;
+import com.mysql.cj.jdbc.Driver;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.*;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 返回ResultSet结果集
+ */
+public class JdbcConn {
+    public static void main(String[] args) throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException, IOException {
+        connect05();
+    }
+    //方式5 
+    public static void connect05() throws IOException, SQLException, ClassNotFoundException {
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("src\\myjdbc\\mysql.properties"));
+
+        //获取相关值
+        String user = properties.getProperty("user");
+        String password = properties.getProperty("password");
+        String url = properties.getProperty("url");
+        String driver = properties.getProperty("driver");
+
+
+
+        //1、注册驱动
+        Class<?> aClass = Class.forName(driver);
+        //2、得到连接
+        Connection connection = DriverManager.getConnection(url, user, password);
+        //3、得到statement
+        Statement statement = connection.createStatement();
+        //4、组织sql语句
+        String sql = "select id,name,sex,borndata from actor";
+        //5、执行sql语句，该语句返回单个ResultSet对象
+        ResultSet resultSet = statement.executeQuery(sql);
+
+        //6、使用while循环取出数据
+        while (resultSet.next()){//光标向后移动，如果没有更多行，则返回false
+            int id = resultSet.getInt(1);//获取该行的第一列
+            String name = resultSet.getString(2);//获取该行的第二列
+            String sex = resultSet.getString(3);
+            Date date = resultSet.getDate(4);
+            System.out.println(id+"\t"+name+"\t"+sex+"\t"+date);
+
+        }
+        //7、关闭连接
+        resultSet.close();
+        statement.close();
+        connection.close();
+
+
+        //释放资源
+        statement.close();
+        connection.close();
+
+    }
+}
+```
+
+
+
+### statement
+
+statement 是一个接口，这个接口会被不同的产商实现
+
+![image-20240618203416990](./assets/image-20240618203416990.png)
+
+![image-20240618203852540](./assets/image-20240618203852540.png)
+真tm天才。黑客
+
+![image-20240618204100378](./assets/image-20240618204100378.png)
+在实际开发中statement 是不能用的，会被sql注入
+
+```java
+package statement;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.*;
+import java.util.Properties;
+import java.util.Scanner;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 演示statument 的注入问题
+ */
+@SuppressWarnings({"all"})
+public class Statument_ {
+    public static void main(String[] args) throws SQLException, IOException, ClassNotFoundException {
+        Scanner scanner = new Scanner(System.in);
+        //让用户输入用户名和密码
+        System.out.print("请输入用户名：");
+        String username = scanner.nextLine();
+        System.out.print("请输入密码：");
+        String pwd = scanner.nextLine();
+
+        //通过Properties对象获取配置文件信息
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("src\\myjdbc\\mysql.properties"));
+
+        //获取相关值
+        String user = properties.getProperty("user");
+        String password = properties.getProperty("password");
+        String url = properties.getProperty("url");
+        String driver = properties.getProperty("driver");
+
+
+
+        //1、注册驱动
+        Class<?> aClass = Class.forName(driver);
+        //2、得到连接
+        Connection connection = DriverManager.getConnection(url, user, password);
+        //3、得到statement
+        Statement statement = connection.createStatement();
+        //4、组织sql语句
+        String sql = "select name,password from user where name='"
+                +username+
+                "' and password = '"
+                +pwd+"'";
+        //5、执行sql语句，该语句返回单个ResultSet对象
+        ResultSet resultSet = statement.executeQuery(sql);
+
+        if(resultSet.next()){
+            System.out.println("登录成功");
+        }else{
+            System.out.println("登录失败");
+        }
+        //7、关闭连接
+        resultSet.close();
+        statement.close();
+        connection.close();
+
+
+        //释放资源
+        statement.close();
+        connection.close();
+
+    }
+}
+```
+
+PreparedStatement
+
+![image-20240619190023482](./assets/image-20240619190023482.png)
+PreparedStatement是Statement的子接口
+
+![image-20240619190131594](./assets/image-20240619190131594.png)
+
+![image-20240619190349000](./assets/image-20240619190349000.png)
+
+![image-20240619190501276](./assets/image-20240619190501276.png)
+编译了一次以后，就不需要在进行编译了，大大提高了效率
+
+![image-20240619191316158](./assets/image-20240619191316158.png)
+
+```java
+package preparedstatement_;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.sql.*;
+import java.util.Properties;
+import java.util.Scanner;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 演示PreparedStatement使用
+ */
+@SuppressWarnings({"all"})
+public class PreparedStatement_ {
+    public static void main(String[] args) throws SQLException, IOException, ClassNotFoundException {
+
+        Scanner scanner = new Scanner(System.in);
+
+
+        //让用户输入用户名和密码
+        System.out.print("请输入用户名：");
+        String username = scanner.nextLine();
+        System.out.print("请输入密码：");
+        String pwd = scanner.nextLine();
+
+        //通过Properties对象获取配置文件信息
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("src\\myjdbc\\mysql.properties"));
+
+        //获取相关值
+        String user = properties.getProperty("user");
+        String password = properties.getProperty("password");
+        String url = properties.getProperty("url");
+        String driver = properties.getProperty("driver");
+
+
+
+        //1、注册驱动
+        Class<?> aClass = Class.forName(driver);
+        //2、得到连接
+        Connection connection = DriverManager.getConnection(url, user, password);
+        //3、得到statement
+//        Statement statement = connection.createStatement();
+        //4、组织sql语句
+        String sql = "select name,password from user where name=? and `password` = ?";
+        //得到PreparedStatement
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        //给? 赋值
+        System.out.println(username);
+        System.out.println(pwd);
+        preparedStatement.setString(1,username);
+        preparedStatement.setString(2,pwd);
+        //5、执行sql语句，该语句返回单个ResultSet对象
+         ResultSet resultSet = preparedStatement.executeQuery();//这里就不要写sql语句了
+        if(resultSet.next()){
+            System.out.println("登录成功");
+        }else{
+            System.out.println("登录失败");
+        }
+        //7、关闭连接
+        resultSet.close();
+        preparedStatement.close();
+        connection.close();
+    }
+}
+```
+
+```java
+package preparedstatement_;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.sql.*;
+import java.util.Properties;
+import java.util.Scanner;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 演示PreparedStatement使用
+ */
+@SuppressWarnings({"all"})
+public class PreparedStatement_ {
+    public static void main(String[] args) throws SQLException, IOException, ClassNotFoundException {
+
+        Scanner scanner = new Scanner(System.in);
+
+
+        //让用户输入用户名和密码
+        System.out.print("请输入用户名：");
+        String username = scanner.nextLine();
+        System.out.print("请输入密码：");
+        String pwd = scanner.nextLine();
+
+        //通过Properties对象获取配置文件信息
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("src\\myjdbc\\mysql.properties"));
+
+        //获取相关值
+        String user = properties.getProperty("user");
+        String password = properties.getProperty("password");
+        String url = properties.getProperty("url");
+        String driver = properties.getProperty("driver");
+
+
+
+        //1、注册驱动
+        Class<?> aClass = Class.forName(driver);
+        //2、得到连接
+        Connection connection = DriverManager.getConnection(url, user, password);
+        //3、得到statement
+//        Statement statement = connection.createStatement();
+        //4、组织sql语句
+//        String sql = "insert into user(name,password) values(?,?)";
+        String sql = "update user set password=? where  name = ?";
+        //得到PreparedStatement
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        //给? 赋值
+        preparedStatement.setString(2,username);
+        preparedStatement.setString(1,pwd);
+        //5、执行dml语句,用executeUpdate
+         int rows = preparedStatement.executeUpdate();
+        System.out.println(rows>0?"成功":"失败");
+        //7、关闭连接
+        preparedStatement.close();
+        connection.close();
+    }
+}
+```
+
+### 练习
+
+![image-20240619195207691](./assets/image-20240619195207691.png)
+
+```java
+package preparedstatement_;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.*;
+import java.util.Properties;
+import java.util.Scanner;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 演示PreparedStatement使用
+ */
+@SuppressWarnings({"all"})
+public class PreparedStatement_ {
+    public static void main(String[] args) throws ClassNotFoundException, SQLException, IOException {
+
+        Scanner scanner = new Scanner(System.in);
+//        System.out.print("请输入用户名：");
+//        String username = scanner.nextLine();
+//        System.out.print("请输入密码：");
+//        String pwd = scanner.nextLine();
+
+//        System.out.print("请输入旧用户名：");
+//        String oldusername = scanner.nextLine();
+//        System.out.print("请输入新用户名：");
+//        String newusername = scanner.nextLine();
+
+//        System.out.print("请输入需要删除的用户名：");
+//        String delusername = scanner.nextLine();
+
+        //通过properties对象获取配置文件信息
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("src/myjdbc/mysql.properties"));
+        //获取相关值
+        String user = properties.getProperty("user");
+        String password = properties.getProperty("password");
+        String url = properties.getProperty("url");
+        String driver = properties.getProperty("driver");
+
+        //注册驱动
+        Class<?> aClass = Class.forName(driver);
+        //获得连接
+        Connection connection = DriverManager.getConnection(url, user, password);
+        //组织sql语句
+//        String sql = "create table admin1(username varchar(32),password varchar (32))";
+//        String sql = "insert into admin1 values(?,?)";
+//        String sql = "update admin1 set username = ? where username = ?";
+//        String sql = "delete from admin1 where username= ?";
+        String sql = "select * from admin1";
+
+        //得到Preparedstatement
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+//        preparedStatement.setString(1,delusername);
+//        preparedStatement.setString(2,oldusername);
+
+        ResultSet resultSet = preparedStatement.executeQuery();
+//        int rows = preparedStatement.executeUpdate();
+//        System.out.println(rows>0?"成功":"失败");
+
+        while (resultSet.next()){
+            String u = resultSet.getString(1);
+            String p = resultSet.getString(2);
+            System.out.println(u+"\t"+p);
+        }
+
+        //关闭连接
+        resultSet.close();
+        preparedStatement.close();
+        connection.close();
+    }
+}
+```
+
+### jdbc API小结
+
+![image-20240619203238724](./assets/image-20240619203238724.png)
+
+![image-20240619203949561](./assets/image-20240619203949561.png)
+
+### jdbc工具类
+
+![image-20240619205711444](./assets/image-20240619205711444.png)
+
+```java
+package utils;
+
+import com.mysql.cj.protocol.Resultset;
+
+import javax.xml.transform.Result;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.sql.*;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 这是一个工具类，完成mysql 的连接和关闭操作
+ */
+public class JDBCUtils {
+    //定义相关属性（4个）因为只需要一份，因此，我们做成static
+    private static String user;//用户名
+    private static String password;//密码
+    private static String url;//数据库路径
+    private static String driver;//驱动名
+
+    //这些属性在static代码块中去初始化
+    static{
+        try {
+            Properties properties = new Properties();
+            properties.load(new FileInputStream("src/myjdbc/mysql.properties"));
+            user=properties.getProperty("user");
+            password= properties.getProperty("password");
+            url = properties.getProperty("url");
+            driver= properties.getProperty("driver");
+
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    //连接数据库，返回Connection
+    public static Connection getConnection() {
+        try {
+            return DriverManager.getConnection(driver);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    //关闭资源
+    /*
+      1、ResultSet 结果集
+      2、Statement 或者 preparedStatement
+      3、Connection
+      4、如果需要关闭资源，就传入对象，否则就传入null
+
+    */
+    public static void close(ResultSet res, Statement statement, Connection connection){
+        try {
+            if(res==null){
+                res.close();
+            }
+            if(statement==null){
+                res.close();
+            }
+            if(connection==null){
+                res.close();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+```java
+package utils;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 该类用于演示如何 使用JDBCUtils 工具类dml 和select
+ */
+public class JDBCUtils_use {
+    public static void main(String[] args) {
+        testDml();
+    }
+    public static void testDml(){
+        //1、得到连接
+        Connection connection = null;
+        //2、组织一个sql
+        String sql = "update actor set name = ? where name = ?";
+        PreparedStatement preparedStatement =null;
+        //3、创建preparedStatement对象
+        try {
+          connection = JDBCUtils.getConnection();
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1,"刘德华");
+            preparedStatement.setString(2,"刘德华1");
+        //执行
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally{//关闭连接
+            JDBCUtils.close(null,preparedStatement,connection);
+        }
+    }
+}
+```
+
+```java
+package utils;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 该类用于演示如何 使用JDBCUtils 工具类dml 和select
+ */
+public class JDBCUtils_use {
+    public static void main(String[] args) {
+        testSelect();
+    }
+    public static void testSelect(){
+        //1、得到连接
+        Connection connection = null;
+        //2、组织一个sql
+        String sql = "select * from actor";
+        PreparedStatement preparedStatement =null;
+        ResultSet resultSet = null;
+        //3、创建preparedStatement对象
+        try {
+            connection=JDBCUtils.getConnection();
+            preparedStatement = connection.prepareStatement(sql);
+
+        //执行
+            resultSet=preparedStatement.executeQuery();
+            while (resultSet.next()){
+                String name = resultSet.getString("name");
+                String sex = resultSet.getString(3);
+                System.out.println(name+"\t"+sex);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally{//关闭连接
+            JDBCUtils.close(resultSet,preparedStatement,connection);
+        }
+    }
+}
+
+```
+
+## 事务
+
+![image-20240620141905306](./assets/image-20240620141905306.png)
+
+![image-20240620142321719](./assets/image-20240620142321719.png)
+
+![image-20240620143636648](./assets/image-20240620143636648.png)
+
+![image-20240620143719058](./assets/image-20240620143719058.png)
+
+
+
+```java
+package transaction_;
+
+import utils.JDBCUtils;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 演示在jdbc 中如何使用事务
+ */
+@SuppressWarnings({"all"})
+public class Transaction_ {
+    public static void main(String[] args) throws SQLException {
+//        noTransaction();
+        useTransaction();
+    }
+    public static void noTransaction(){
+        //1、得到连接
+        Connection connection = null;
+        //2、组织一个sql
+        String sql = "update account1 set balance = balance-100 where  id=1";
+        String sql2 = "update account1 set balance = balance+100 where  id=2";
+        //3、创建preparedStatement对象
+        PreparedStatement preparedStatement =null;
+        ResultSet resultSet = null;
+        try {
+            connection= JDBCUtils.getConnection();//在默认情况下connection是自动提交的。
+            //执行
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.executeUpdate();//执行第一条sql语句
+
+            int i = 1/0;//抛出异常
+
+            preparedStatement = connection.prepareStatement(sql2);
+            preparedStatement.executeUpdate();//执行第二条sql语句
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally{//关闭连接
+            JDBCUtils.close(resultSet,preparedStatement,connection);
+        }
+    }
+    public static void useTransaction() throws SQLException {
+        //1、得到连接
+        Connection connection = null;
+        //2、组织一个sql
+        String sql = "update account1 set balance = balance-100 where  id=1";
+        String sql2 = "update account1 set balance = balance+100 where  id=2";
+        //3、创建preparedStatement对象
+        PreparedStatement preparedStatement =null;
+        ResultSet resultSet = null;
+        try {
+            connection= JDBCUtils.getConnection();//在默认情况下connection是自动提交的。
+            //将connection 设置不自动提交
+            connection.setAutoCommit(false);//相当于开启了事务
+            //执行
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.executeUpdate();//执行第一条sql语句
+
+//            int i = 1/0;//抛出异常
+
+            preparedStatement = connection.prepareStatement(sql2);
+            preparedStatement.executeUpdate();//执行第二条sql语句
+
+            connection.commit();//提交事务
+
+        } catch (SQLException e) {
+            //这里我们有机会进行回滚
+            System.out.println("执行发生异常，撤销执行的sql");
+            connection.rollback();
+            throw new RuntimeException(e);
+        } finally{//关闭连接
+            JDBCUtils.close(resultSet,preparedStatement,connection);
+        }
+    }
+}
+```
+
+
+
+## 批处理
+
+![image-20240620170053120](./assets/image-20240620170053120.png)
+将所有的sql语句放在一个集合中
+
+![image-20240620170708902](./assets/image-20240620170708902.png)
+?rewriteBatchedStatements=true
+
+![image-20240620172058687](./assets/image-20240620172058687.png)
+
+  ![image-20240620172323946](./assets/image-20240620172323946.png)
+
+```java
+package batch_;
+import utils.JDBCUtils;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 演示java 的处理
+ */
+@SuppressWarnings({"all"})
+public class Batch_ {
+    public static void main(String[] args) throws Exception {
+//        noBath();
+        useBath();
+    }
+
+    //传统方法添加5000条数据
+    public static void noBath() throws Exception {
+        Connection connection = JDBCUtils.getConnection();
+        String sql = "insert into admin2 values(null,?,?)";
+        long start = System.currentTimeMillis();//开始时间
+        System.out.println("开始执行sql语句");
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        for (int i = 1; i <=5000; i++) {
+            preparedStatement.setString(1,"jack"+i);
+            preparedStatement.setString(2,"666");
+            preparedStatement.executeUpdate();
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("用时 ："+(end-start));//用时 ：6877
+
+        //关闭连接
+        JDBCUtils.close(null,preparedStatement,connection);
+    }
+
+
+    public static void useBath() throws Exception {
+        Connection connection = JDBCUtils.getConnection();
+        String sql = "insert into admin2 values(null,?,?)";
+        long start = System.currentTimeMillis();//开始时间
+        System.out.println("开始执行sql语句");
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        for (int i = 1; i <=5000; i++) {
+            preparedStatement.setString(1,"jack"+i);
+            preparedStatement.setString(2,"666");
+            //将sql语句加入到批处理包
+            preparedStatement.addBatch();
+            if(i%1000==0){
+                preparedStatement.executeBatch();
+                preparedStatement.clearParameters();//清空一把
+
+            }
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("用时 ："+(end-start));//用时 ：139
+
+        //关闭连接
+        JDBCUtils.close(null,preparedStatement,connection);
+    }
+}
+```
+
+![image-20240620185233350](./../Typora/image-20240620185233350.png)
+
+![image-20240620185343868](./assets/image-20240620185343868.png)
+
+![image-20240620185705836](./assets/image-20240620185705836.png)
+
+## mysql 数据库连接池
+
+### 引出为什么需要连接池
+
+![image-20240620185907329](./assets/image-20240620185907329.png)
+
+![image-20240620190851059](./assets/image-20240620190851059-1718881732349-2.png)
+
+![image-20240620191734364](./assets/image-20240620191734364.png)
+
+![image-20240620191852626](./assets/image-20240620191852626.png)
+
+### 数据库连接池原理
+
+![image-20240620193721502](./assets/image-20240620193721502.png)
+
+![image-20240620193725148](./assets/image-20240620193725148.png)
+
+![image-20240620194933076](./assets/image-20240620194933076.png)
+
+DataSource是一个接口，接口通常由第三方提供实现，所以肯定会提供给我们一个jar包
+
+jar包导入问题：https://blog.csdn.net/the_ZED/article/details/106388938/
+
+![image-20240620203203601](./assets/image-20240620203203601.png)
+
+![image-20240620203152048](./assets/image-20240620203152048.png)
+
+![image-20240620205655799](./assets/image-20240620205655799.png)
+![image-20240620205709163](./assets/image-20240620205709163.png)
+
+```java
+package datasource;
+
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+
+import java.beans.PropertyVetoException;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 演示c3p0的使用
+ */
+@SuppressWarnings({"all"})
+public class C3P0_ {
+    public static void main(String[] args) throws Exception {
+        testC3p0_01();
+    }
+    // 方式1 ： 相关参数，在程序中指定user,url,password
+    public static void testC3p0_01() throws IOException, PropertyVetoException, SQLException {
+        //创建一个数据源
+        ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource();
+        //通过配置文件获取相关连接信息
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("src\\myjdbc\\mysql.properties"));
+        String user = properties.getProperty("user");
+        String password = properties.getProperty("password");
+        String url = properties.getProperty("url");
+        String driver = properties.getProperty("driver");
+
+        //给数据源 comboPooledDataSource 设置相关参数
+        //注意：连接管理是由comboPooledDataSource 来管理
+        comboPooledDataSource.setDriverClass(driver);
+        comboPooledDataSource.setJdbcUrl(url);
+        comboPooledDataSource.setUser(user);
+        comboPooledDataSource.setPassword(password);
+
+        //初始化连接数
+        comboPooledDataSource.setInitialPoolSize(10);
+        //最大连接数
+        comboPooledDataSource.setMaxPoolSize(50);
+        //测试连接池效率，测试连接池5000次操作
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < 5000; i++) {
+        Connection connection = comboPooledDataSource.getConnection();//这个方法从DataSource接口获得
+//        System.out.println("连接ok");
+        connection.close();
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("c3p0 5000 连接mysql 耗时"+(end-start));
+    }
+}
+```
+
+![image-20240620212034895](./assets/image-20240620212034895.png)
+
+```java
+package datasource;
+
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+
+import java.beans.PropertyVetoException;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 演示c3p0的使用
+ */
+@SuppressWarnings({"all"})
+public class C3P0_ {
+    public static void main(String[] args) throws Exception {
+        testC3p0_02();
+    }
+    //第二种方法
+    public static void testC3p0_02() throws SQLException {
+        ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource("hello");
+        //测试5000次连接mysql
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < 5000; i++) {
+            Connection connection = comboPooledDataSource.getConnection();
+//            System.out.println("连接ok");
+            connection.close();
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("耗时："+(end-start));//耗时：815
+    }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
