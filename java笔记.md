@@ -4431,6 +4431,8 @@ public class Batch_ {
 
 ## mysql 数据库连接池
 
+![image-20240623172306972](./assets/image-20240623172306972.png)
+
 ### 引出为什么需要连接池
 
 ![image-20240620185907329](./assets/image-20240620185907329.png)
@@ -4450,6 +4452,8 @@ public class Batch_ {
 ![image-20240620194933076](./assets/image-20240620194933076.png)
 
 DataSource是一个接口，接口通常由第三方提供实现，所以肯定会提供给我们一个jar包
+
+### C3P0数据库连接池
 
 jar包导入问题：https://blog.csdn.net/the_ZED/article/details/106388938/
 
@@ -4560,13 +4564,1072 @@ public class C3P0_ {
 }
 ```
 
+### 德鲁伊数据库连接池
+
+https://blog.csdn.net/qq_71443736/article/details/134918638
+
+![image-20240620234603860](./assets/image-20240620234603860.png)
+
+```java
+package druid_;
+
+import com.alibaba.druid.pool.DruidDataSourceFactory;
+
+import javax.sql.DataSource;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.Connection;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 测试druid的使用
+ */
+@SuppressWarnings({"all"})
+public class Druid_ {
+    public static void main(String[] args) throws Exception {
+        testDruid();
+    }
+    // 1、加入jar包
+    // 2、加入配置文件 druid.properties ,放在src目录下面
+    // 3、创建properties对象，读取配置文件
+    public static void testDruid() throws Exception {
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("src\\druid.properties"));
+
+        //创建一个指定参数的数据库连接池，druid连接池
+        DataSource dataSource = DruidDataSourceFactory.createDataSource(properties);
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < 5000; i++) {
+            Connection connection = dataSource.getConnection();
+//            System.out.println("连接成功");
+            connection.close();
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("耗时："+(end-start));   //耗时：547
+    }
+}
+```
+
+### 德鲁伊工具类
+
+![image-20240621000505435](./assets/image-20240621000505435.png)
+
+![image-20240621082923708](./assets/image-20240621082923708.png)
+druid的close的实现方式和之前mysql的close实现方式是不一样的。
+
+```java
+package druid_;
+
+import com.alibaba.druid.pool.DruidDataSourceFactory;
+
+import javax.sql.DataSource;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Properties;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 基于druid数据库连接池的工具类
+ */
+public class JDBCUtilsByDruid {
+    public static DataSource ds;
+
+    //在静态代码块中完成对ds的初始化
+    static {
+        Properties properties = new Properties();
+        try {
+            properties.load(new FileInputStream("src\\druid.properties"));
+            ds = DruidDataSourceFactory.createDataSource(properties);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+    public static Connection getConnection() throws SQLException {
+        return ds.getConnection();//通过数据库连接池的方式来获取连接
+    }
+
+    //关闭连接（把连接放入到连接池） close 不是真的断掉连接
+    //而是把使用的connection 对象放回到连接池
+    public static void close(ResultSet resultSet,Statement statement,Connection connection){
+        try {
+            if(resultSet!=null){
+                resultSet.close();
+            }
+            if(statement!=null){
+                statement.close();
+            }
+            if(connection!=null){
+                connection.close();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+```java
+package druid_;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 该类用于演示如何 使用JDBCUtils 工具类dml 和select
+ */
+@SuppressWarnings({"all"})
+public class JDBCUtilsByDruid_use {
+    public static void main(String[] args) {
+        testSelect();
+    }
+
+    public static void testSelect() {
+        //1、得到连接
+        Connection connection = null;
+        //2、组织一个sql
+        String sql = "select * from actor";
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        //3、创建preparedStatement对象
+        try {
+            connection = JDBCUtilsByDruid.getConnection();
+            System.out.println(connection.getClass());//运行类型:class com.alibaba.druid.pool.DruidPooledConnection
+            preparedStatement = connection.prepareStatement(sql);
+            //执行
+            resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                String name = resultSet.getString("name");
+                String sex = resultSet.getString(3);
+                System.out.println(name + "\t" + sex);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {//关闭连接
+            JDBCUtilsByDruid.close(resultSet, preparedStatement, connection);
+        }
+    }
+}
+
+```
+
+connection是一个接口，而真正实现类的运行类型是不一样的。
+
+## Apache-DBUtils  +  druit
+
+![image-20240621163738464](./assets/image-20240621163738464.png)
+在关闭connection 后，resultSet 结果集是无法使用的
+在某些情况下我们需要这个结果集复用，用了之后还要返回给另一个文件使用
+
+![image-20240623092003464](./assets/image-20240623092003464.png)
+![image-20240623092022277](./assets/image-20240623092022277.png)
+
+![image-20240623092547891](./assets/image-20240623092547891.png)
+
+![image-20240623092628656](./assets/image-20240623092628656.png)
+![image-20240623092727717](./assets/image-20240623092727717.png)
+
+### 土方法演示完成封装解决问题
+
+```java
+package druid_;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ */
+@SuppressWarnings({"all"})
+public class JDBCUtilsByDruid_use {
+    public static void main(String[] args) {
+        testSelectToArrayList();
+    }
+
+    //使用老师的土方法来解决ResultSet =封闭=> ArrayList
+
+    public static ArrayList<Actor> testSelectToArrayList() {
+        //1、得到连接
+        Connection connection = null;
+        //2、组织一个sql
+        String sql = "select * from actor where id >1";
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        ArrayList <Actor> list = new ArrayList<>();
+        //3、创建preparedStatement对象
+        try {
+            connection = JDBCUtilsByDruid.getConnection();
+            System.out.println(connection.getClass());//运行类型:class com.alibaba.druid.pool.DruidPooledConnection
+            preparedStatement = connection.prepareStatement(sql);
+            //执行
+            resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Integer id = resultSet.getInt("id");
+                String name = resultSet.getString("name");
+                String sex = resultSet.getString(3);
+                //把得到的resultSet记录，封装到Actor对象 ，放入list集合
+                list.add(new Actor(id,name,sex));
+//                System.out.println(name + "\t" + sex);
+            }
+            System.out.println("list集合数据 ： "+list);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {//关闭连接
+            JDBCUtilsByDruid.close(resultSet, preparedStatement, connection);
+        }
+        return  list;
+    }
+
+}
+```
+
+```java
+package druid_;
+
+import java.util.Date;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * Actor对象和actor表记录对应
+ */
+public class Actor {
+    private Integer id;
+    private String  name;
+    private String sex;
+
+    public Actor() {//这里一定要给一个无参的构造器【因为反射需要】
+
+    }
+
+    public Actor(Integer id, String name, String sex) {
+        this.id = id;
+        this.name = name;
+        this.sex = sex;
+    }
+
+    @Override
+    public String toString() {
+        return "Actor{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", sex='" + sex + '\'' +
+                '}';
+    }
+}
+```
+
+### Apache-DBUtils工具类
+
+下载jar包：https://blog.csdn.net/qq_32965187/article/details/86161173
+
+![image-20240623120352311](./assets/image-20240623120352311.png)
+
+![image-20240623122323817](./assets/image-20240623122323817.png)
+运用到了反射
+
+![image-20240623123109567](./assets/image-20240623123109567.png)
+
+### 处理返回的是多条(多行多列)记录
+
+```java
+package druid_;
+
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.BeanListHandler;
+import utils.JDBCUtils;
+import java.util.Date;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 
+ */
+@SuppressWarnings({"all"})
+public class DBUtils_use {
+    public static void main(String[] args) throws Exception {
+        testQueryMany();
+    }
+
+    //返回多行多列
+    public static  void testQueryMany() throws SQLException {
+        //通过druid得到连接
+        Connection connection = JDBCUtilsByDruid.getConnection();
+        //使用DBUtils 类和接口，先引入 DBUtils 相关的jar包，加入到本地Project
+        //创建QueryRunner
+        QueryRunner queryRunner = new QueryRunner();
+        //这个QueryRunner就可以执行相关的方法，返回ArrayList结果集
+        String sql = "select * from actor where  id > ?";
+        List<Actor> list =
+                queryRunner.query(connection, sql, new BeanListHandler<>(Actor.class), 1);
+
+        System.out.println("输出集合的信息");
+        for(Actor actor:list){
+            System.out.println(actor);
+        }
+
+        //释放资源
+        JDBCUtilsByDruid.close(null,null,connection);
+    }
+}
+```
+
+### 处理返回的是单条(单行多列)记录
+
+```java
+package druid_;
+
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.BeanHandler;
+import org.apache.commons.dbutils.handlers.BeanListHandler;
+import utils.JDBCUtils;
+import java.util.Date;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 该类用于演示如何 使用JDBCUtils 工具类dml 和select
+ */
+@SuppressWarnings({"all"})
+public class DBUtils_use {
+    public static void main(String[] args) throws Exception {
+        testQuerySingle();
+    }
+    //返回单行多列
+    public static void testQuerySingle() throws SQLException {
+        //得到druid连接
+        Connection connection = JDBCUtilsByDruid.getConnection();
+        //创建QueryRunner
+        QueryRunner queryRunner = new QueryRunner();
+        //编写sql语句，返回单个对象
+        String sql = "select * from actor where  id = ?";
+        //因为返回的是单个记录，所以用的Handler是BeanHandler
+        Actor actor = queryRunner.query(connection, sql, new BeanHandler<>(Actor.class), 2);
+        System.out.println(actor);
+
+        //释放资源
+        JDBCUtilsByDruid.close(null,null,connection);
+    }
+}
+```
+
+### 处理返回是一个对象的(单行单列)记录
+
+```java
+package druid_;
+
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.BeanHandler;
+import org.apache.commons.dbutils.handlers.BeanListHandler;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
+import utils.JDBCUtils;
+import java.util.Date;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ */
+@SuppressWarnings({"all"})
+public class DBUtils_use {
+    public static void main(String[] args) throws Exception {
+        testScalar();
+    }
+    //返回单行单列
+    public static void testScalar() throws SQLException {
+        //得到druid连接
+        Connection connection = JDBCUtilsByDruid.getConnection();
+        //创建QueryRunner
+        QueryRunner queryRunner = new QueryRunner();
+        //编写sql语句，返回单个对象
+        String sql = "select name from actor where  id = ?";
+
+        //因为返回的是单个记录，所以用的Handler是BeanHandler
+        Object actor = queryRunner.query(connection, sql,  new ScalarHandler(), 2);
+        System.out.println(actor);
+
+        //释放资源
+        JDBCUtilsByDruid.close(null,null,connection);
+    }
+}
+```
+
+### Apache-DBUtils  +  druit 完成dml 操作
+
+![image-20240623155358866](./assets/image-20240623155358866.png)
+ 返回值 是受影响的行数，这里蜜枣执行没有影响到表更准确一点
+
+```java
+package druid_;
+
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.BeanHandler;
+import org.apache.commons.dbutils.handlers.BeanListHandler;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
+import utils.JDBCUtils;
+import java.util.Date;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ */
+@SuppressWarnings({"all"})
+public class DBUtils_use {
+    public static void main(String[] args) throws Exception {
+        testDml();
+    }
+
+    public static void testDml() throws SQLException {
+        //得到druid连接
+        Connection connection = JDBCUtilsByDruid.getConnection();
+        //创建QueryRunner
+        QueryRunner queryRunner = new QueryRunner();
+        //编写sql语句，返回单个对象
+//        String sql = "update actor set name= ? where id = ?";
+//        String sql = "insert into actor values(null,?,?,?,?)";
+        String sql = "delete from actor where id = ?";
 
 
 
+//        int affectedRow = queryRunner.update(connection, sql, "张三丰");
+//        int affectedRow = queryRunner.update(connection, sql, "林青霞","女","2022-2-2","123123");
+        int affectedRow = queryRunner.update(connection, sql,2);
+
+        System.out.println(affectedRow > 0 ?"执行成功":"执行没有影响到表");
+
+        //释放资源
+        JDBCUtilsByDruid.close(null,null,connection);
+    }
+}
+```
+
+![image-20240623165217111](./assets/image-20240623165217111.png)
+表的列类型与java 类型的对应关系。
+
+## BasicDao
+
+![image-20240623170638822](./assets/image-20240623170638822.png)
+
+![image-20240623173712876](./assets/image-20240623173712876.png)
+![image-20240624081720891](./assets/image-20240624081720891.png)
+在实际开发中，可能不仅仅只是这几个部分，还有更多后面慢慢展开讲。
+我们对项目数据库的操作，是比较复杂的，绝对不可以像之前那样写的写一个方法什么什么的，太笨拙了
+所以提出了一个概念：在实际开发中有一张表，比如actor对应一个actorDAO,这个actorDAO就对应对这个表的操作。而每一个表又和java类中有一个映射关系。
+
+![image-20240623173754501](./assets/image-20240623173754501.png)
+
+### BasicDAO实现
+
+![image-20240624081530591](./assets/image-20240624081530591.png)
+
+![image-20240624093200145](./assets/image-20240624093200145.png)
+
+![image-20240624101903968](./assets/image-20240624101903968.png)
+
+```java
+package dao_.dao;
+
+import dao_.utils.JDBCUtilsByDruid;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.BeanHandler;
+import org.apache.commons.dbutils.handlers.BeanListHandler;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
+import utils.JDBCUtils;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 开发 basicDao,是其他类的父类
+ */
+public class BasicDAO <T> {
+    private QueryRunner qr = new QueryRunner();
+
+    //开发通用的dml方法，针对任意表
+    public int update(String sql,Object ...parameters){
+        Connection connection = null;
+
+        try {
+            connection = JDBCUtilsByDruid.getConnection();
+            int update = qr.update(connection,sql, parameters);
+            return  update;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            JDBCUtilsByDruid.close(null,null,connection);
+        }
+    }
+    //返回多个对象（即查询的结果是多行），针对任意表
+    public List<T> queryMultiply(String sql, Class<T> clazz, Object parameters){
+        Connection connection = null;
+
+        try {
+            connection = JDBCUtilsByDruid.getConnection();
+            //new BeanListHanndler :处理器。（底层用的处理器模式）
+            return qr.query(connection, sql, new BeanListHandler<T>(clazz), parameters);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            JDBCUtilsByDruid.close(null,null,connection);
+        }
+    }
+    //查询单行结果的通用方法
+    public T querySingle(String sql , Class<T>clazz,Object...parameters){
+        Connection connection = null;
+
+        try {
+            connection = JDBCUtilsByDruid.getConnection();
+            //new BeanListHanndler :处理器。（底层用的处理器模式）
+            return qr.query(connection, sql, new BeanHandler<T>(clazz), parameters);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            JDBCUtilsByDruid.close(null,null,connection);
+        }
+    }
+
+    //查询单行单列的方法，返回单值的方法
+    public Object queryScalar(String sql , Object...parameters){
+        Connection connection = null;
+
+        try {
+            connection = JDBCUtilsByDruid.getConnection();
+            //new BeanListHanndler :处理器。（底层用的处理器模式）
+            return qr.query(connection, sql, new ScalarHandler<>(), parameters);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            JDBCUtilsByDruid.close(null,null,connection);
+        }
+    }
+}
+```
+
+```java
+package dao_.dao;
+
+import dao_.domain.Actor;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ */
+public class ActorDAO extends BasicDAO<Actor>{
+    //现在这里面用有了BasicDAO里面的方法
+    //可以根据场景在里面添加特定方法
+}
+```
+
+```java
+package dao_.test;
+
+import dao_.dao.ActorDAO;
+import dao_.domain.Actor;
+
+import java.util.List;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ */
+public class TestDAO {
+    public static void main(String[] args) {
+        testActorDAO();
+    }
+    //测试ActorDAO 对actor表的操作
+    public static void testActorDAO(){
+        ActorDAO actorDAO = new ActorDAO();
+        //1.查询
+        List<Actor> actors = actorDAO.queryMultiply("select * from actor where id >?", Actor.class, 1);
+        System.out.println("========查询多行记录结果========");
+        for(Actor actor : actors){
+            System.out.println(actor);
+        }
+        //2、查询单行记录
+        Actor actor2 = actorDAO.querySingle("select * from actor where id =?", Actor.class, 4);
+        System.out.println("========查询单行记录结果========");
+        System.out.println(actor2);
+        //3、查询单行单列
+        Object obj = actorDAO.queryScalar("select name from actor where id =?", 4);
+        System.out.println("========查询单行单列结果========");
+        System.out.println(obj);
+        //4、dml 操作 insert update dml
+        int update = actorDAO.update("insert into actor values(null,?,?,?,?)","张无忌","男","2020-2-23","999");
+        System.out.println(update>0 ? "成功":"执行没有影响表");
+
+    }
+}
+```
+
+##  经验之谈
+
+任何事情都是万丈高楼平地起，永远保持一颗初心，不要认为自己的技术已经很牛逼了，一定要认为自己是一个初学者，是一个归零的状态，学东西要认认真真，扎扎实实的去学，这样你的效果就会很好。有一天你觉得你自己技术已经很牛逼了，那个时候你的技术就不会在增加了。一旦有一天你沾沾自喜了，那你的进步也就停止了
+
+# 正则表达式
+
+![image-20240704172036641](./assets/image-20240704172036641.png)
 
 
 
+## 引入正则表达式
 
 
 
+![image-20240704173511590](./assets/image-20240704173511590.png)
 
+![image-20240704173542209](./assets/image-20240704173542209.png)
+
+## 为什么要使用正则表达式
+
+![image-20240704174026883](./assets/image-20240704174026883.png)
+
+![image-20240704174118615](./assets/image-20240704174118615.png)
+
+![image-20240704174240739](./assets/image-20240704174240739.png)
+
+## 正则表达式底层实现
+
+![image-20240704174434424](./assets/image-20240704174434424.png)
+
+```java
+package regexp;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 分析正则表达式的底层实现（重要）
+ */
+public class RegTheory {
+    public static void main(String[] args) {
+        String content = "1919年12月10日基本面枯右基本面枯右基本2002面枯右基本面枯" +
+                "右基本面枯右基本面4002枯右基本面枯本面4234枯右基本面枯右";
+        //目标：匹配4个数字
+        //说明：
+        //1、\\d 表示任意一个数字
+        String regStr = "(\\d\\d)(\\d\\d)";
+        //2、创建模式对象【即正则表达式对象】
+        Pattern pattern = Pattern.compile(regStr);
+        //3、创建匹配器
+        //说明：创建匹配器matcher,按照正则表达式的规则 去匹配 content字符串
+        Matcher matcher = pattern.matcher(content);
+        //4、开始匹配
+        while(matcher.find()){
+            System.out.println("找到："+matcher.group(0));
+            System.out.println("第1组括号匹配到的值："+matcher.group(1));
+            System.out.println("第2组括号匹配到的值："+matcher.group(2));
+        }
+    }
+}
+```
+
+![image-20240704224915241](./assets/image-20240704224915241.png)
+
+![image-20240704193053457](./assets/image-20240704193053457.png)
+
+![image-20240704223735437](./assets/image-20240704223735437.png)
+
+![image-20240704223827524](./assets/image-20240704223827524.png)
+
+![image-20240704224255086](./assets/image-20240704224255086.png)
+
+![image-20240704224609401](./assets/image-20240704224609401.png)
+
+![image-20240704225133123](./assets/image-20240704225133123.png)
+
+## 正则表达式语法
+
+![image-20240704225237390](./assets/image-20240704225237390.png)
+
+### 1、字符匹配符
+
+![image-20240704225259410](./assets/image-20240704225259410.png)
+
+![image-20240704230752181](./assets/image-20240704230752181.png)
+
+```java
+package regexp;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ */
+public class RegExp02 {
+    public static void main(String[] args) {
+        String content = "abc$(abc(123(";
+        //匹配(
+        String regStr = "\\(";
+        Pattern pattern = Pattern.compile(regStr);
+        Matcher matcher = pattern.matcher(content);
+        while(matcher.find()){
+            System.out.println("找到 "+matcher.group(0));
+        }
+    }
+}
+```
+
+![image-20240704231325924](./assets/image-20240704231325924.png)
+
+![image-20240704231707141](./assets/image-20240704231707141.png)
+
+### 练习
+
+![image-20240705063929989](./assets/image-20240705063929989.png)
+![image-20240705064814771](./assets/image-20240705064814771.png)
+
+![image-20240705065139136](./assets/image-20240705065139136.png)
+
+这里注意一下，是除了斜杆n，斜杆r，斜杆r斜杆n都匹配，不单单是除了斜杆n
+
+```java
+package regexp;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 演示字符匹配符的使用
+ */
+public class RegExp03 {
+    public static void main(String[] args) {
+        String content = "abca11c8ABC";
+        String regStr = "[a-z]";
+//        String regStr = "(?i)[A-Z]";
+//        String regStr = "(?i)abc";
+        Pattern pattern = Pattern.compile(regStr,Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(content);
+        while (matcher.find()){
+            System.out.println("找到："+matcher.group(0));
+        }
+    }
+}
+```
+
+### 2、选择匹配符
+
+![image-20240705065948195](./assets/image-20240705065948195.png)
+
+![image-20240705065927937](./assets/image-20240705065927937.png)
+
+### 3、限定符
+
+![image-20240705070315191](./assets/image-20240705070315191.png)
+![image-20240705070341376](./assets/image-20240705070341376.png)
+
+![image-20240705070733828](./assets/image-20240705070733828.png)
+
+![image-20240705073612154](./assets/image-20240705073612154.png)
+
+![image-20240705073530778](./assets/image-20240705073530778.png)
+
+![image-20240705073629004](./assets/image-20240705073629004.png)
+
+### 4、定位符
+
+![image-20240705124742046](./assets/image-20240705124742046.png)
+
+```java
+package regexp;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 演示字符匹配符的使用
+ */
+public class RegExp03 {
+    public static void main(String[] args) {
+        String content = "123abc123abc";
+        String regStr = "^[0-9]+[a-z]*";
+        Pattern pattern = Pattern.compile(regStr);
+        Matcher matcher = pattern.matcher(content);
+        while (matcher.find()){
+            System.out.println("找到："+matcher.group(0));
+        }
+    }
+}
+```
+
+### 5、分组
+
+![image-20240705134351170](./assets/image-20240705134351170.png)
+
+![image-20240705135045236](./assets/image-20240705135045236.png)
+
+![image-20240705135117112](./assets/image-20240705135117112.png)
+
+![image-20240705140429720](./assets/image-20240705140429720.png)
+
+![image-20240705140547364](./assets/image-20240705140547364.png)
+![image-20240705140837722](./assets/image-20240705140837722.png)
+
+![image-20240705140921867](./assets/image-20240705140921867.png)
+![image-20240705140924916](./assets/image-20240705140924916.png)
+
+![image-20240705141057862](./assets/image-20240705141057862.png)
+![image-20240705141109366](./assets/image-20240705141109366.png)
+
+### 6、非贪婪匹配
+
+![image-20240705141712877](./assets/image-20240705141712877.png)
+
+```java
+package regexp;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ */
+public class RegExp03 {
+    public static void main(String[] args) {
+       String content = "heool11111 ok";
+//       String regStr = "\\d";
+//       String regStr = "\\d+";
+       String regStr = "\\d+?";
+
+        Pattern pattern = Pattern.compile(regStr);
+        Matcher matcher = pattern.matcher(content);
+        while (matcher.find()){
+            System.out.println(matcher.group(0));
+        }
+    }
+}
+```
+
+## 正则应用实例
+
+![image-20240705142114005](./assets/image-20240705142114005.png)
+
+![image-20240705142402086](./assets/image-20240705142402086.png)
+
+```java
+package regexp;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 正则表达式应用实例
+ */
+public class RegExp03 {
+    public static void main(String[] args) {
+        String content = "13473832101";
+//      汉字   u4e00-u9fa5
+//        String regStr = "^[\u4e00-\u9fa5]+$";
+//      邮编
+//        String regStr = "^[1-9]\\d{5}$";
+//      qq号码
+//        String regStr = "^[1-9]\\d{4,9}$";
+//      手机号码
+        String regStr = "^1[3|4|5|8]\\d{9}$";
+        Pattern pattern = Pattern.compile(regStr);
+        Matcher matcher = pattern.matcher(content);
+       if(matcher.find()){
+           System.out.println("满足条件");
+       }else{
+           System.out.println("不满足条件");
+       }
+    }
+}
+
+```
+
+![image-20240705155256712](./assets/image-20240705155256712.png)
+
+## 正则表达式常用类
+
+![image-20240705155435670](./assets/image-20240705155435670.png)
+
+### Pattern
+
+```java
+package regexp;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ * 演示matches 方法，用于整体匹配，验证输入的字符串是否满足条件使用
+ */
+public class RegExp03 {
+    public static void main(String[] args) {
+        String content = "hello abc hello,韩顺平教育";
+        String regStr = "hello.*";
+        boolean matches = Pattern.matches(regStr, content);
+        
+        System.out.println("整体匹配=" + matches);
+    }
+}
+```
+
+### Matcher
+
+![image-20240705164555889](./assets/image-20240705164555889.png)
+![image-20240705164912700](./assets/image-20240705164912700.png)
+
+![image-20240705164748438](./assets/image-20240705164748438.png)
+
+![image-20240705165023071](./assets/image-20240705165023071.png)
+
+![image-20240705164935347](./assets/image-20240705164935347.png)
+
+![image-20240705165733741](./assets/image-20240705165733741.png)
+
+## 反向引用
+
+![image-20240705170334368](./assets/image-20240705170334368.png)
+
+![image-20240705173202562](./assets/image-20240705173202562.png)
+
+![image-20240705175755836](./assets/image-20240705175755836.png)
+
+![image-20240705175922032](./assets/image-20240705175922032.png)
+
+![image-20240705180150863](./assets/image-20240705180150863.png)
+
+## 结巴去重案例
+
+![image-20240705180321564](./assets/image-20240705180321564.png)
+
+```java
+package regexp;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ */
+public class RegExp03 {
+    public static void main(String[] args) {
+        String content = "我......我要.....学学学学...编程java";
+        //1、去掉所有的.
+        Pattern pattern = Pattern.compile("\\.");
+        Matcher matcher = pattern.matcher(content);
+        content = matcher.replaceAll("");
+
+//        System.out.println("content="+content);
+        //2、去掉重复字
+//        pattern = Pattern.compile("(.)\\1+");
+//        matcher = pattern.matcher(content);
+//        while (matcher.find()){
+//            System.out.println(matcher.group(0));
+//        }
+//        content = matcher.replaceAll("$1");
+//        System.out.println("content="+content);
+        //使用一条语句去掉重复字
+        content =Pattern.compile("(.)\\1+").matcher(content).replaceAll("$1");
+        System.out.println("content="+content);
+    }
+}
+```
+
+## 替换、判断、分割
+
+![image-20240705182530980](./assets/image-20240705182530980.png)
+
+![image-20240705182543347](./assets/image-20240705182543347.png)
+
+![image-20240705182614274](./assets/image-20240705182614274.png)
+
+![image-20240705182705403](./assets/image-20240705182705403.png)
+
+![image-20240705182844768](./assets/image-20240705182844768.png)
+
+![image-20240705182936415](./assets/image-20240705182936415.png)
+
+## 本章作业
+
+![image-20240705183347618](./assets/image-20240705183347618.png)
+
+![image-20240705184414773](./assets/image-20240705184414773.png)
+整体匹配
+
+```java
+package regexp;
+
+/**
+ * @author 王俊彪
+ * @version 1.0
+ */
+public class Homework01 {
+    public static void main(String[] args) {
+        String content = "2300825413@qq.com";
+        String regStr = "^[\\w-]+@([a-zA-Z]+\\.)+[a-zA-Z]+$";
+        if(content.matches(regStr)){
+            System.out.println("匹配成功");
+        }else{
+            System.out.println("匹配失败");
+        }
+    }
+}
+```
+
+![image-20240705190324376](./assets/image-20240705190324376.png)
+
+![image-20240705190327496](./assets/image-20240705190327496.png)
+
+![image-20240705190443912](./assets/image-20240705190443912.png)
+
+![image-20240705203600417](./assets/image-20240705203600417.png)
+
+![image-20240705203235142](./assets/image-20240705203235142.png)
